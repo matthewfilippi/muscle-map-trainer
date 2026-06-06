@@ -16,7 +16,7 @@ const outlineMaterial = new THREE.MeshStandardMaterial({
   opacity: 0.16
 });
 
-const modelVerticalOffset = 0.76;
+const modelVerticalOffset = 1.06;
 const floorVerticalOffset = -3.8;
 
 function ellipsoid({ name, muscleId, position, scale, color, segments = 32, rotation = [0, 0, 0], opacity = 1 }) {
