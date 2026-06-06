@@ -200,7 +200,6 @@ function renderRoutinePage() {
           </div>
           <button class="primary-button" type="button" id="generateRoutine">Generate</button>
         </div>
-        <div class="equipment-filter" id="equipmentFilter"></div>
         <div class="level-control" role="radiogroup" aria-label="Workout level">
           ${Object.entries(LEVELS).map(([id, level]) => `
             <button class="level-button" type="button" role="radio" aria-checked="${appState.level === id}" data-level="${id}">
@@ -208,6 +207,7 @@ function renderRoutinePage() {
             </button>
           `).join("")}
         </div>
+        <div class="equipment-filter" id="equipmentFilter"></div>
         <div class="split-summary" id="splitSummary"></div>
         <div class="routine-muscles" id="routineMuscles"></div>
       </div>
@@ -277,7 +277,7 @@ function renderEquipmentFilter() {
     <div class="filter-heading">
       <div>
         <p>Filters</p>
-        <h2>Equipment</h2>
+        <h2>Equipment Filters</h2>
       </div>
       <button class="text-button" type="button" id="clearEquipment" ${selected.length === 0 ? "disabled" : ""}>All Equipment</button>
     </div>
