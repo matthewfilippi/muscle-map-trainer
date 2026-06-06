@@ -16,7 +16,7 @@ const outlineMaterial = new THREE.MeshStandardMaterial({
   opacity: 0.16
 });
 
-function ellipsoid({ name, muscleId, position, scale, color, segments = 32 }) {
+function ellipsoid({ name, muscleId, position, scale, color, segments = 32, rotation = [0, 0, 0] }) {
   const geometry = new THREE.SphereGeometry(1, segments, 18);
   const material = new THREE.MeshStandardMaterial({
     color,
@@ -26,6 +26,7 @@ function ellipsoid({ name, muscleId, position, scale, color, segments = 32 }) {
   const mesh = new THREE.Mesh(geometry, material);
   mesh.name = name;
   mesh.position.set(...position);
+  mesh.rotation.set(...rotation);
   mesh.scale.set(...scale);
   mesh.castShadow = true;
   mesh.receiveShadow = true;
@@ -86,7 +87,7 @@ export class BodyScene {
     this.scene.background = new THREE.Color("#f4f7f4");
 
     this.camera = new THREE.PerspectiveCamera(36, 1, 0.1, 100);
-    this.camera.position.set(0, 1.15, 8.2);
+    this.camera.position.set(0, 0.9, 9.8);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -111,7 +112,7 @@ export class BodyScene {
       new THREE.MeshStandardMaterial({ color: "#dfe9e2", roughness: 0.9 })
     );
     floor.rotation.x = -Math.PI / 2;
-    floor.position.y = -3.08;
+    floor.position.y = -3.46;
     floor.receiveShadow = true;
     this.scene.add(floor);
 
@@ -139,6 +140,8 @@ export class BodyScene {
     this.group.add(baseCylinder([0.42, -1.45, 0], 0.28, 0.22, 1.48, [0.04, 0, -0.04]));
     this.group.add(baseCylinder([-0.42, -2.58, 0], 0.17, 0.13, 1.2, [-0.02, 0, 0.02]));
     this.group.add(baseCylinder([0.42, -2.58, 0], 0.17, 0.13, 1.2, [-0.02, 0, -0.02]));
+    this.group.add(baseEllipsoid([-0.42, -3.23, 0.16], [0.22, 0.12, 0.4]));
+    this.group.add(baseEllipsoid([0.42, -3.23, 0.16], [0.22, 0.12, 0.4]));
 
     const pieces = [
       ellipsoid({ name: "Left pectoral", muscleId: "chest", position: [-0.34, 0.88, 0.43], scale: [0.38, 0.34, 0.14], color: muscleColor("chest") }),
@@ -166,7 +169,11 @@ export class BodyScene {
       cylinder({ name: "Left hamstring", muscleId: "hamstrings", position: [-0.4, -1.5, -0.2], radiusTop: 0.18, radiusBottom: 0.14, height: 1.05, color: muscleColor("hamstrings"), rotation: [0.03, 0, 0.04] }),
       cylinder({ name: "Right hamstring", muscleId: "hamstrings", position: [0.4, -1.5, -0.2], radiusTop: 0.18, radiusBottom: 0.14, height: 1.05, color: muscleColor("hamstrings"), rotation: [0.03, 0, -0.04] }),
       cylinder({ name: "Left calf", muscleId: "calves", position: [-0.4, -2.6, -0.04], radiusTop: 0.13, radiusBottom: 0.1, height: 0.88, color: muscleColor("calves"), rotation: [-0.02, 0, 0.02] }),
-      cylinder({ name: "Right calf", muscleId: "calves", position: [0.4, -2.6, -0.04], radiusTop: 0.13, radiusBottom: 0.1, height: 0.88, color: muscleColor("calves"), rotation: [-0.02, 0, -0.02] })
+      cylinder({ name: "Right calf", muscleId: "calves", position: [0.4, -2.6, -0.04], radiusTop: 0.13, radiusBottom: 0.1, height: 0.88, color: muscleColor("calves"), rotation: [-0.02, 0, -0.02] }),
+      ellipsoid({ name: "Left ankle", muscleId: "feetAnkles", position: [-0.4, -3.08, -0.02], scale: [0.16, 0.12, 0.16], color: muscleColor("feetAnkles") }),
+      ellipsoid({ name: "Right ankle", muscleId: "feetAnkles", position: [0.4, -3.08, -0.02], scale: [0.16, 0.12, 0.16], color: muscleColor("feetAnkles") }),
+      ellipsoid({ name: "Left foot", muscleId: "feetAnkles", position: [-0.4, -3.25, 0.24], scale: [0.22, 0.1, 0.42], color: muscleColor("feetAnkles"), rotation: [0.08, 0, 0.02] }),
+      ellipsoid({ name: "Right foot", muscleId: "feetAnkles", position: [0.4, -3.25, 0.24], scale: [0.22, 0.1, 0.42], color: muscleColor("feetAnkles"), rotation: [0.08, 0, -0.02] })
     ];
 
     pieces.forEach((piece) => {

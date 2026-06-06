@@ -207,6 +207,20 @@ export const MUSCLES = [
       { name: "Single-Leg Calf Raise", level: "intermediate", equipment: "Step", cue: "Keep the ankle moving straight." },
       { name: "Loaded Donkey Calf Raise", level: "expert", equipment: "Machine", cue: "Control the stretch before driving up." }
     ]
+  },
+  {
+    id: "feetAnkles",
+    name: "Feet & Ankles",
+    region: "Legs",
+    color: "#8f7bdc",
+    role: "Foot strength, ankle mobility, balance, and lower-leg injury resilience.",
+    exercises: [
+      { name: "Toe Yoga", level: "beginner", equipment: "Floor", cue: "Lift the big toe without gripping the floor." },
+      { name: "Ankle Alphabet", level: "beginner", equipment: "Floor", cue: "Draw slow letters with the toes while the shin stays quiet." },
+      { name: "Tibialis Raise", level: "intermediate", equipment: "Wall", cue: "Lift the toes toward the shins and lower with control." },
+      { name: "Single-Leg Balance Reach", level: "intermediate", equipment: "Floor", cue: "Keep the arch active as the free foot reaches." },
+      { name: "Band Resisted Ankle Eversion", level: "expert", equipment: "Band", cue: "Move from the ankle and avoid rolling the knee outward." }
+    ]
   }
 ];
 
@@ -226,8 +240,8 @@ export const SPLITS = [
   {
     id: "legs",
     name: "Legs",
-    description: "Quads, hamstrings, glutes, and calves work together in lower-body sessions.",
-    muscles: ["quads", "hamstrings", "glutes", "calves"]
+    description: "Quads, hamstrings, glutes, calves, feet, and ankles work together in lower-body sessions.",
+    muscles: ["quads", "hamstrings", "glutes", "calves", "feetAnkles"]
   },
   {
     id: "core",
@@ -278,4 +292,3 @@ export function getActiveSplits(selectedMuscles) {
   const compatibleSplitIds = getCompatibleSplitIds(selectedMuscles);
   return SPLITS.filter((split) => compatibleSplitIds.includes(split.id));
 }
-
