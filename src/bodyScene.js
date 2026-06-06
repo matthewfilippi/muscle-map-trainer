@@ -16,6 +16,9 @@ const outlineMaterial = new THREE.MeshStandardMaterial({
   opacity: 0.16
 });
 
+const modelVerticalOffset = 1.06;
+const floorVerticalOffset = -3.8;
+
 function ellipsoid({ name, muscleId, position, scale, color, segments = 32, rotation = [0, 0, 0], opacity = 1 }) {
   const geometry = new THREE.SphereGeometry(1, segments, 18);
   const material = new THREE.MeshStandardMaterial({
@@ -115,12 +118,13 @@ export class BodyScene {
       new THREE.MeshStandardMaterial({ color: "#dfe9e2", roughness: 0.9 })
     );
     floor.rotation.x = -Math.PI / 2;
-    floor.position.y = -3.46;
+    floor.position.y = modelVerticalOffset + floorVerticalOffset;
     floor.receiveShadow = true;
     this.scene.add(floor);
 
     this.buildBody();
     this.scene.add(this.group);
+    this.group.position.y = modelVerticalOffset;
     this.group.rotation.y = -0.18;
 
     this.bindEvents();
@@ -282,7 +286,7 @@ export class BodyScene {
   animate() {
     this.animationFrame = requestAnimationFrame(() => this.animate());
     const elapsed = this.clock.getElapsedTime();
-    this.group.position.y = Math.sin(elapsed * 0.8) * 0.025;
+    this.group.position.y = modelVerticalOffset + Math.sin(elapsed * 0.8) * 0.025;
     this.renderer.render(this.scene, this.camera);
   }
 

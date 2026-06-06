@@ -279,14 +279,95 @@ export const SPLITS = [
 
 const levelOrder = ["beginner", "intermediate", "expert"];
 
+const equipmentNameMap = new Map([
+  ["ab wheel", "Ab Wheel"],
+  ["anchor", "Anchor"],
+  ["ball", "Ball"],
+  ["band", "Band"],
+  ["barbell", "Barbell"],
+  ["bench", "Bench"],
+  ["box", "Box"],
+  ["cable", "Cable"],
+  ["dumbbell", "Dumbbells"],
+  ["dumbbells", "Dumbbells"],
+  ["ez bar", "EZ Bar"],
+  ["floor", "Floor"],
+  ["hand resistance", "Hand Resistance"],
+  ["kettlebell", "Kettlebell"],
+  ["landmine", "Landmine"],
+  ["machine", "Machine"],
+  ["mat", "Mat"],
+  ["neck harness", "Neck Harness"],
+  ["pull-up bar", "Pull-Up Bar"],
+  ["roman chair", "Roman Chair"],
+  ["step", "Step"],
+  ["towel", "Towel"],
+  ["wall", "Wall"],
+  ["wedge", "Wedge"]
+]);
+
+function slugifyEquipment(label) {
+  return label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+function normalizeEquipmentLabel(label) {
+  const key = label.trim().toLowerCase();
+  if (equipmentNameMap.has(key)) {
+    return equipmentNameMap.get(key);
+  }
+
+  return key
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+export function getExerciseEquipmentTypes(equipment) {
+  return equipment
+    .split(/\s+or\s+|,|\/|\+/i)
+    .map(normalizeEquipmentLabel)
+    .filter(Boolean)
+    .map((label) => ({
+      id: slugifyEquipment(label),
+      label
+    }));
+}
+
+export function getEquipmentOptions() {
+  const options = new Map();
+
+  MUSCLES.forEach((muscle) => {
+    muscle.exercises.forEach((exercise) => {
+      getExerciseEquipmentTypes(exercise.equipment).forEach((equipment) => {
+        options.set(equipment.id, equipment.label);
+      });
+    });
+  });
+
+  return [...options.entries()]
+    .map(([id, label]) => ({ id, label }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+}
+
+export function exerciseMatchesEquipment(exercise, selectedEquipmentIds = []) {
+  if (selectedEquipmentIds.length === 0) {
+    return true;
+  }
+
+  const exerciseEquipmentIds = getExerciseEquipmentTypes(exercise.equipment).map((equipment) => equipment.id);
+  return exerciseEquipmentIds.some((equipmentId) => selectedEquipmentIds.includes(equipmentId));
+}
+
 export function getMuscle(id) {
   return MUSCLES.find((muscle) => muscle.id === id);
 }
 
-export function getExercisePool(muscleId, level) {
+export function getExercisePool(muscleId, level, selectedEquipmentIds = []) {
   const muscle = getMuscle(muscleId);
   const maxLevel = levelOrder.indexOf(level);
-  return muscle.exercises.filter((exercise) => levelOrder.indexOf(exercise.level) <= maxLevel);
+  return muscle.exercises.filter(
+    (exercise) => levelOrder.indexOf(exercise.level) <= maxLevel && exerciseMatchesEquipment(exercise, selectedEquipmentIds)
+  );
 }
 
 export function getCompatibleSplitIds(selectedMuscles) {

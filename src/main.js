@@ -7,6 +7,7 @@ import {
   getActiveSplits,
   getAllowedMuscleIds,
   getCompatibleSplitIds,
+  getEquipmentOptions,
   getExercisePool,
   getMuscle
 } from "./data.js";
@@ -15,8 +16,10 @@ const appState = {
   page: "body",
   selectedMuscle: "chest",
   selectedRoutineMuscles: ["chest", "shoulders", "triceps"],
+  selectedEquipment: [],
   level: "beginner",
-  generatedRoutine: []
+  generatedRoutine: [],
+  unmatchedMuscles: []
 };
 
 let bodyScene = null;
@@ -204,6 +207,7 @@ function renderRoutinePage() {
             </button>
           `).join("")}
         </div>
+        <div class="equipment-filter" id="equipmentFilter"></div>
         <div class="split-summary" id="splitSummary"></div>
         <div class="routine-muscles" id="routineMuscles"></div>
       </div>
@@ -221,6 +225,7 @@ function renderRoutinePage() {
   });
 
   renderRoutineMuscles();
+  renderEquipmentFilter();
   renderSplitSummary();
   if (appState.generatedRoutine.length === 0) {
     generateRoutine();
@@ -262,6 +267,56 @@ function renderRoutineMuscles() {
   });
 }
 
+function renderEquipmentFilter() {
+  const root = app.querySelector("#equipmentFilter");
+  if (!root) return;
+
+  const equipmentOptions = getEquipmentOptions();
+  const selected = appState.selectedEquipment;
+  root.innerHTML = `
+    <div class="filter-heading">
+      <div>
+        <p>Filters</p>
+        <h2>Equipment Filters</h2>
+      </div>
+      <button class="text-button" type="button" id="clearEquipment" ${selected.length === 0 ? "disabled" : ""}>All Equipment</button>
+    </div>
+    <div class="equipment-grid">
+      ${equipmentOptions.map((equipment) => `
+        <button
+          class="equipment-toggle ${selected.includes(equipment.id) ? "is-selected" : ""}"
+          type="button"
+          data-equipment="${equipment.id}"
+          aria-pressed="${selected.includes(equipment.id)}"
+        >
+          ${equipment.label}
+        </button>
+      `).join("")}
+    </div>
+  `;
+
+  root.querySelector("#clearEquipment").addEventListener("click", () => {
+    appState.selectedEquipment = [];
+    generateRoutine();
+    renderRoutinePage();
+  });
+
+  root.querySelectorAll(".equipment-toggle").forEach((button) => {
+    button.addEventListener("click", () => toggleEquipment(button.dataset.equipment));
+  });
+}
+
+function toggleEquipment(id) {
+  if (appState.selectedEquipment.includes(id)) {
+    appState.selectedEquipment = appState.selectedEquipment.filter((equipmentId) => equipmentId !== id);
+  } else {
+    appState.selectedEquipment = [...appState.selectedEquipment, id];
+  }
+
+  generateRoutine();
+  renderRoutinePage();
+}
+
 function toggleRoutineMuscle(id) {
   const selected = appState.selectedRoutineMuscles;
   if (selected.includes(id)) {
@@ -299,15 +354,22 @@ function generateRoutine() {
   const selected = appState.selectedRoutineMuscles;
   if (selected.length === 0) {
     appState.generatedRoutine = [];
+    appState.unmatchedMuscles = [];
     renderRoutineResult();
     return;
   }
 
   const level = LEVELS[appState.level];
   const routine = [];
+  const unmatchedMuscles = [];
 
   selected.forEach((muscleId, muscleIndex) => {
-    const pool = getExercisePool(muscleId, appState.level);
+    const pool = getExercisePool(muscleId, appState.level, appState.selectedEquipment);
+    if (pool.length === 0) {
+      unmatchedMuscles.push(muscleId);
+      return;
+    }
+
     const count = Math.min(level.exerciseCount, pool.length);
     for (let index = 0; index < count; index += 1) {
       routine.push({
@@ -321,6 +383,7 @@ function generateRoutine() {
   });
 
   appState.generatedRoutine = routine;
+  appState.unmatchedMuscles = unmatchedMuscles;
   renderRoutineResult();
 }
 
@@ -332,7 +395,7 @@ function renderRoutineResult() {
     root.innerHTML = `
       <div class="empty-state">
         <h2>No Routine Yet</h2>
-        <p>Select a compatible muscle group to build a session.</p>
+        <p>${appState.selectedRoutineMuscles.length === 0 ? "Select a compatible muscle group to build a session." : "No exercises match the current equipment filters."}</p>
       </div>
     `;
     return;
@@ -340,8 +403,16 @@ function renderRoutineResult() {
 
   const level = LEVELS[appState.level];
   const selectedNames = appState.selectedRoutineMuscles.map(muscleName).join(" + ");
+  const equipmentOptions = getEquipmentOptions();
+  const selectedEquipmentNames = appState.selectedEquipment
+    .map((equipmentId) => equipmentOptions.find((equipment) => equipment.id === equipmentId)?.label)
+    .filter(Boolean)
+    .join(", ");
   const totalSets = appState.generatedRoutine.reduce((sum, item) => sum + Number.parseInt(item.sets, 10), 0);
   const estimatedMinutes = Math.max(25, appState.generatedRoutine.length * (appState.level === "expert" ? 8 : 6));
+  const unmatchedNotice = appState.unmatchedMuscles.length > 0
+    ? `<div class="routine-warning">No matching ${level.label.toLowerCase()} exercises for ${appState.unmatchedMuscles.map(muscleName).join(", ")} with the current equipment filters.</div>`
+    : "";
 
   root.innerHTML = `
     <div class="result-header">
@@ -354,6 +425,8 @@ function renderRoutineResult() {
         <span>${totalSets}+ sets</span>
       </div>
     </div>
+    <div class="routine-note">${selectedEquipmentNames ? `Equipment: ${selectedEquipmentNames}` : "Equipment: all available options"}</div>
+    ${unmatchedNotice}
     <div class="routine-note">${level.note}</div>
     <ol class="routine-list">
       ${appState.generatedRoutine.map((item) => {
