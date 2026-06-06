@@ -118,6 +118,20 @@ export const MUSCLES = [
     ]
   },
   {
+    id: "neck",
+    name: "Neck",
+    region: "Upper Support",
+    color: "#9c6fcb",
+    role: "Neck control, posture, and resilience for upper-body training.",
+    exercises: [
+      { name: "Chin Tuck", level: "beginner", equipment: "Floor or wall", cue: "Glide the chin straight back without tipping the head." },
+      { name: "Neck Isometric Hold", level: "beginner", equipment: "Hand resistance", cue: "Press gently in each direction while the head stays still." },
+      { name: "Prone Neck Extension", level: "intermediate", equipment: "Bench", cue: "Lift the head to neutral and avoid craning upward." },
+      { name: "Band Neck Rotation", level: "intermediate", equipment: "Band", cue: "Rotate slowly through a comfortable range." },
+      { name: "Harness Neck Extension", level: "expert", equipment: "Neck harness", cue: "Use light load and smooth reps with no jerking." }
+    ]
+  },
+  {
     id: "lowerBack",
     name: "Lower Back",
     region: "Core / Pull",
@@ -234,8 +248,8 @@ export const SPLITS = [
   {
     id: "pull",
     name: "Pull",
-    description: "Back, biceps, forearms, traps, and lower back pair well around pulling and hinging.",
-    muscles: ["lats", "traps", "biceps", "forearms", "lowerBack"]
+    description: "Back, biceps, forearms, traps, neck, and lower back pair well around pulling, posture, and hinging.",
+    muscles: ["lats", "traps", "biceps", "forearms", "lowerBack", "neck"]
   },
   {
     id: "legs",
@@ -254,6 +268,12 @@ export const SPLITS = [
     name: "Arms",
     description: "Biceps, triceps, forearms, and shoulders can sit together as an accessory day.",
     muscles: ["biceps", "triceps", "forearms", "shoulders"]
+  },
+  {
+    id: "upperSupport",
+    name: "Upper Support",
+    description: "Neck, traps, and shoulders train well together for posture and upper-body support.",
+    muscles: ["neck", "traps", "shoulders"]
   }
 ];
 

@@ -16,12 +16,15 @@ const outlineMaterial = new THREE.MeshStandardMaterial({
   opacity: 0.16
 });
 
-function ellipsoid({ name, muscleId, position, scale, color, segments = 32, rotation = [0, 0, 0] }) {
+function ellipsoid({ name, muscleId, position, scale, color, segments = 32, rotation = [0, 0, 0], opacity = 1 }) {
   const geometry = new THREE.SphereGeometry(1, segments, 18);
   const material = new THREE.MeshStandardMaterial({
     color,
     roughness: 0.58,
-    metalness: 0.03
+    metalness: 0.03,
+    transparent: opacity < 1,
+    opacity,
+    depthWrite: opacity >= 0.65
   });
   const mesh = new THREE.Mesh(geometry, material);
   mesh.name = name;
@@ -154,6 +157,8 @@ export class BodyScene {
       cylinder({ name: "Right triceps", muscleId: "triceps", position: [1.14, 0.24, -0.18], radiusTop: 0.14, radiusBottom: 0.12, height: 0.82, color: muscleColor("triceps"), rotation: [0.08, 0, 0.17] }),
       cylinder({ name: "Left forearm", muscleId: "forearms", position: [-1.34, -0.55, 0.08], radiusTop: 0.12, radiusBottom: 0.09, height: 0.88, color: muscleColor("forearms"), rotation: [0.08, 0, -0.11] }),
       cylinder({ name: "Right forearm", muscleId: "forearms", position: [1.34, -0.55, 0.08], radiusTop: 0.12, radiusBottom: 0.09, height: 0.88, color: muscleColor("forearms"), rotation: [0.08, 0, 0.11] }),
+      cylinder({ name: "Neck column", muscleId: "neck", position: [0, 1.62, 0.02], radiusTop: 0.2, radiusBottom: 0.23, height: 0.48, color: muscleColor("neck") }),
+      ellipsoid({ name: "Front neck", muscleId: "neck", position: [0, 1.6, 0.28], scale: [0.23, 0.3, 0.12], color: muscleColor("neck") }),
       ellipsoid({ name: "Upper traps", muscleId: "traps", position: [0, 1.34, -0.22], scale: [0.7, 0.24, 0.17], color: muscleColor("traps") }),
       ellipsoid({ name: "Left lat", muscleId: "lats", position: [-0.46, 0.35, -0.42], scale: [0.32, 0.78, 0.16], color: muscleColor("lats") }),
       ellipsoid({ name: "Right lat", muscleId: "lats", position: [0.46, 0.35, -0.42], scale: [0.32, 0.78, 0.16], color: muscleColor("lats") }),
@@ -170,10 +175,14 @@ export class BodyScene {
       cylinder({ name: "Right hamstring", muscleId: "hamstrings", position: [0.4, -1.5, -0.2], radiusTop: 0.18, radiusBottom: 0.14, height: 1.05, color: muscleColor("hamstrings"), rotation: [0.03, 0, -0.04] }),
       cylinder({ name: "Left calf", muscleId: "calves", position: [-0.4, -2.6, -0.04], radiusTop: 0.13, radiusBottom: 0.1, height: 0.88, color: muscleColor("calves"), rotation: [-0.02, 0, 0.02] }),
       cylinder({ name: "Right calf", muscleId: "calves", position: [0.4, -2.6, -0.04], radiusTop: 0.13, radiusBottom: 0.1, height: 0.88, color: muscleColor("calves"), rotation: [-0.02, 0, -0.02] }),
-      ellipsoid({ name: "Left ankle", muscleId: "feetAnkles", position: [-0.4, -3.08, -0.02], scale: [0.16, 0.12, 0.16], color: muscleColor("feetAnkles") }),
-      ellipsoid({ name: "Right ankle", muscleId: "feetAnkles", position: [0.4, -3.08, -0.02], scale: [0.16, 0.12, 0.16], color: muscleColor("feetAnkles") }),
-      ellipsoid({ name: "Left foot", muscleId: "feetAnkles", position: [-0.4, -3.25, 0.24], scale: [0.22, 0.1, 0.42], color: muscleColor("feetAnkles"), rotation: [0.08, 0, 0.02] }),
-      ellipsoid({ name: "Right foot", muscleId: "feetAnkles", position: [0.4, -3.25, 0.24], scale: [0.22, 0.1, 0.42], color: muscleColor("feetAnkles"), rotation: [0.08, 0, -0.02] })
+      ellipsoid({ name: "Left ankle", muscleId: "feetAnkles", position: [-0.4, -3.07, -0.02], scale: [0.24, 0.17, 0.23], color: muscleColor("feetAnkles") }),
+      ellipsoid({ name: "Right ankle", muscleId: "feetAnkles", position: [0.4, -3.07, -0.02], scale: [0.24, 0.17, 0.23], color: muscleColor("feetAnkles") }),
+      ellipsoid({ name: "Left foot", muscleId: "feetAnkles", position: [-0.4, -3.25, 0.28], scale: [0.36, 0.14, 0.58], color: muscleColor("feetAnkles"), rotation: [0.08, 0, 0.02] }),
+      ellipsoid({ name: "Right foot", muscleId: "feetAnkles", position: [0.4, -3.25, 0.28], scale: [0.36, 0.14, 0.58], color: muscleColor("feetAnkles"), rotation: [0.08, 0, -0.02] }),
+      ellipsoid({ name: "Left toe box", muscleId: "feetAnkles", position: [-0.4, -3.25, 0.66], scale: [0.3, 0.09, 0.2], color: muscleColor("feetAnkles"), rotation: [0.04, 0, 0.02] }),
+      ellipsoid({ name: "Right toe box", muscleId: "feetAnkles", position: [0.4, -3.25, 0.66], scale: [0.3, 0.09, 0.2], color: muscleColor("feetAnkles"), rotation: [0.04, 0, -0.02] }),
+      ellipsoid({ name: "Left foot click pad", muscleId: "feetAnkles", position: [-0.4, -3.2, 0.32], scale: [0.48, 0.24, 0.78], color: muscleColor("feetAnkles"), opacity: 0.22 }),
+      ellipsoid({ name: "Right foot click pad", muscleId: "feetAnkles", position: [0.4, -3.2, 0.32], scale: [0.48, 0.24, 0.78], color: muscleColor("feetAnkles"), opacity: 0.22 })
     ];
 
     pieces.forEach((piece) => {
