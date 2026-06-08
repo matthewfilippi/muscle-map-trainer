@@ -279,92 +279,560 @@ export const SPLITS = [
 
 const levelOrder = ["beginner", "intermediate", "expert"];
 
-const animationPatterns = {
-  press: {
-    label: "Press",
-    setup: "Brace the torso and move the hands away from the body under control.",
-    motion: "Press out, pause briefly, then return through the same path.",
-    focus: "Keep shoulders packed and finish each rep without rushing."
+const animationProfiles = {
+  inclinePushUp: {
+    pattern: "press",
+    label: "Incline Push-Up",
+    setup: "Place both hands on the front edge of the bench and step the feet back into a straight plank.",
+    motion: "Lower the chest toward the bench by bending the elbows, then press the body away as one line.",
+    focus: "Keep the hips from sagging and keep the bench under the hands."
   },
-  pull: {
-    label: "Pull",
-    setup: "Set the shoulder blades, keep the ribs quiet, and start from a long reach.",
-    motion: "Pull the elbows toward the body, pause, then return with control.",
-    focus: "Lead with the elbows instead of shrugging the neck."
+  benchPressDumbbell: {
+    pattern: "press",
+    label: "Dumbbell Bench Press",
+    setup: "Lie face up on the bench with a dumbbell in each hand beside the chest.",
+    motion: "Press the dumbbells up over the chest, then lower them in a controlled arc.",
+    focus: "Keep the wrists over the elbows and the weights directly above the upper torso."
   },
-  curl: {
-    label: "Curl",
-    setup: "Stand tall with upper arms still and wrists stacked.",
-    motion: "Bend the elbows, squeeze at the top, then lower slowly.",
-    focus: "Avoid swinging the torso to move the load."
+  benchPressBarbell: {
+    pattern: "press",
+    label: "Barbell Bench Press",
+    setup: "Lie face up on the bench with the bar over the chest and hands set evenly.",
+    motion: "Lower the bar to the chest, pause, then press it back over the shoulders.",
+    focus: "Keep the bar close to a vertical path over the chest instead of drifting toward the face."
   },
-  raise: {
-    label: "Raise",
-    setup: "Set the shoulder blades and use a light, controllable load.",
-    motion: "Raise the arms smoothly, pause near the top, then lower with control.",
-    focus: "Stop before the shoulders shrug upward."
+  cableFly: {
+    pattern: "raise",
+    label: "Cable Fly",
+    setup: "Stand between the cable columns with the handles out wide and elbows softly bent.",
+    motion: "Sweep the hands together in front of the chest, then return along the same arc.",
+    focus: "Keep the elbow bend mostly fixed so the motion comes from the shoulders."
   },
-  squat: {
-    label: "Squat",
-    setup: "Plant the feet, brace the trunk, and keep the knees tracking over the toes.",
-    motion: "Sit down between the hips, pause, then drive the floor away.",
-    focus: "Keep the whole foot grounded through the rep."
+  wallSlide: {
+    pattern: "raise",
+    label: "Wall Slide",
+    setup: "Stand with the back, head, elbows, wrists, and hands close to the wall in a goalpost shape.",
+    motion: "Slide the arms upward along the wall toward overhead, then return to the goalpost position.",
+    focus: "Keep the ribs down and keep the arms traveling on the wall."
   },
-  hinge: {
-    label: "Hinge",
-    setup: "Brace, soften the knees, and push the hips back.",
-    motion: "Lower until the hips load, then stand tall by driving the hips through.",
-    focus: "Keep the back neutral and the load close."
+  lateralRaise: {
+    pattern: "raise",
+    label: "Lateral Raise",
+    setup: "Stand tall with dumbbells at the sides and a slight, fixed bend in the elbows.",
+    motion: "Raise the elbows and hands out to the sides until they reach shoulder height, then lower.",
+    focus: "Lead with the elbows and avoid turning it into a shrug."
   },
-  core: {
-    label: "Core",
-    setup: "Brace the ribs toward the pelvis before the movement starts.",
-    motion: "Move the limbs or torso while the trunk resists unwanted motion.",
-    focus: "Keep breathing without losing the brace."
+  seatedOverheadPress: {
+    pattern: "press",
+    label: "Seated Overhead Press",
+    setup: "Sit tall on the bench with dumbbells at shoulder height.",
+    motion: "Press the dumbbells overhead, then lower them back to the shoulders.",
+    focus: "Keep the ribs stacked over the pelvis while the weights move vertically."
   },
-  carry: {
-    label: "Carry",
-    setup: "Stand tall with the weight controlled and shoulders level.",
-    motion: "Walk with quiet, even steps while staying braced.",
-    focus: "Resist leaning or twisting as fatigue builds."
+  landminePress: {
+    pattern: "press",
+    label: "Half-Kneeling Landmine Press",
+    setup: "Kneel with one knee down and hold the end of the angled bar near the shoulder.",
+    motion: "Press the bar up and forward on its diagonal path, then return it to the shoulder.",
+    focus: "Let the bar rotate around the floor anchor instead of moving like a straight overhead press."
   },
-  calf: {
-    label: "Calf Raise",
-    setup: "Stack the ankle under the knee and use a full comfortable range.",
-    motion: "Rise onto the ball of the foot, pause, then lower into a stretch.",
-    focus: "Move straight up and down without rolling the ankle."
+  benchDip: {
+    pattern: "press",
+    label: "Bench Dip",
+    setup: "Face away from the bench with hands on the bench edge behind the hips and heels on the floor.",
+    motion: "Lower the hips by bending the elbows back, then press up by extending the elbows.",
+    focus: "Keep the bench behind the body and keep the elbows pointing backward."
   },
-  ankle: {
-    label: "Foot & Ankle",
-    setup: "Use a slow range of motion and keep the shin quiet.",
-    motion: "Move through the foot or ankle while maintaining balance and control.",
-    focus: "Keep the arch active and avoid gripping with the toes."
+  cablePressdown: {
+    pattern: "press",
+    label: "Cable Pressdown",
+    setup: "Stand at a high cable with elbows pinned beside the ribs and forearms angled upward.",
+    motion: "Extend the elbows to press the handle down, then let the forearms return upward.",
+    focus: "Keep the upper arms still while the cable runs from the high pulley to the hands."
   },
-  neck: {
-    label: "Neck Control",
-    setup: "Start tall with the chin lightly tucked.",
-    motion: "Move or resist pressure slowly through a pain-free range.",
-    focus: "Use very light effort and stop if symptoms appear."
+  overheadTricepsExtension: {
+    pattern: "press",
+    label: "Overhead Extension",
+    setup: "Hold one dumbbell overhead with both hands and elbows pointing upward.",
+    motion: "Bend the elbows to lower the dumbbell behind the head, then extend back overhead.",
+    focus: "Keep the upper arms near the ears instead of letting the elbows flare wide."
+  },
+  closeGripBenchPress: {
+    pattern: "press",
+    label: "Close-Grip Bench Press",
+    setup: "Lie on the bench with the bar over the lower chest and hands closer than shoulder width.",
+    motion: "Lower the bar with elbows tucked, then press it back to lockout.",
+    focus: "Show a narrower hand position than the regular bench press."
+  },
+  bandCurl: {
+    pattern: "curl",
+    label: "Band Curl",
+    setup: "Stand on the band with both handles in the hands and upper arms still.",
+    motion: "Curl the hands toward the shoulders, then lower against the band's pull.",
+    focus: "Keep the band anchored under the feet."
+  },
+  dumbbellCurl: {
+    pattern: "curl",
+    label: "Dumbbell Curl",
+    setup: "Stand tall with dumbbells at the sides and elbows close to the ribs.",
+    motion: "Curl the weights upward, then lower them under control.",
+    focus: "Keep the elbows from drifting forward."
+  },
+  inclineDumbbellCurl: {
+    pattern: "curl",
+    label: "Incline Dumbbell Curl",
+    setup: "Recline on an inclined bench with arms hanging slightly behind the torso.",
+    motion: "Curl the dumbbells up without moving the upper arms, then return to the long-arm start.",
+    focus: "The bench should support the back while the arms start behind the body."
+  },
+  reverseCurl: {
+    pattern: "curl",
+    label: "Reverse Curl",
+    setup: "Hold the EZ bar with palms facing down and elbows beside the ribs.",
+    motion: "Curl the bar upward while keeping the wrists straight, then lower.",
+    focus: "Keep the bar in front of the body and the forearms doing the work."
+  },
+  pullUp: {
+    pattern: "pull",
+    label: "Pull-Up",
+    setup: "Hang from the pull-up bar with arms long and feet off the floor.",
+    motion: "Pull the chest toward the bar by driving the elbows down, then lower under control.",
+    focus: "Keep the bar fixed above the body."
+  },
+  chinUp: {
+    pattern: "pull",
+    label: "Chin-Up",
+    setup: "Hang from the bar with an underhand grip and arms long.",
+    motion: "Pull the chest toward the bar, then lower back to a full hang.",
+    focus: "Show the body moving up toward a fixed overhead bar."
+  },
+  towelHang: {
+    pattern: "carry",
+    label: "Towel Hang",
+    setup: "Loop a towel over the pull-up bar and grip both sides while hanging.",
+    motion: "Hold the hang while the shoulders stay active and the body remains long.",
+    focus: "The towel should hang from the bar and the hands should stay on it."
+  },
+  farmerCarry: {
+    pattern: "carry",
+    label: "Farmer Carry",
+    setup: "Stand tall with dumbbells held at the sides.",
+    motion: "Walk with small alternating steps while keeping the weights quiet.",
+    focus: "Keep the weights beside the thighs and the shoulders level."
+  },
+  suitcaseCarry: {
+    pattern: "carry",
+    label: "Suitcase Carry",
+    setup: "Hold one kettlebell at one side with the body tall and square.",
+    motion: "Walk without leaning toward the weight.",
+    focus: "Show one-sided loading so the trunk has to resist side bend."
+  },
+  wristCurl: {
+    pattern: "curl",
+    label: "Wrist Curl",
+    setup: "Support the forearm on the bench with the hand holding a dumbbell past the edge.",
+    motion: "Curl the wrist up and lower it through a small controlled range.",
+    focus: "Only the hand and wrist should move."
+  },
+  latPulldown: {
+    pattern: "pull",
+    label: "Lat Pulldown",
+    setup: "Anchor the band or machine high overhead with hands reaching up.",
+    motion: "Pull the elbows down toward the ribs, then return to the overhead reach.",
+    focus: "Keep the cable or band coming from above."
+  },
+  cableRow: {
+    pattern: "pull",
+    label: "Single-Arm Cable Row",
+    setup: "Face the low cable with one arm reaching forward.",
+    motion: "Pull the handle toward the ribs, then reach forward again.",
+    focus: "Use a low cable path from the column to the working hand."
+  },
+  proneYRaise: {
+    pattern: "raise",
+    label: "Prone Y Raise",
+    setup: "Lie chest-down on an incline bench with arms reaching in a Y shape.",
+    motion: "Lift the arms slightly above the bench, then lower with control.",
+    focus: "The bench supports the torso while the arms move diagonally overhead."
+  },
+  shrug: {
+    pattern: "raise",
+    label: "Dumbbell Shrug",
+    setup: "Stand tall with dumbbells hanging beside the thighs.",
+    motion: "Lift the shoulders straight up, pause, then lower.",
+    focus: "The arms stay long while the shoulders do the movement."
+  },
+  facePull: {
+    pattern: "pull",
+    label: "Face Pull",
+    setup: "Stand facing a cable set near face height with arms reaching forward.",
+    motion: "Pull the handle toward the face with elbows high, then return.",
+    focus: "The cable should run from the face-height pulley to the hands."
+  },
+  highPull: {
+    pattern: "pull",
+    label: "High Pull",
+    setup: "Hold the barbell in front of the thighs with a wide grip.",
+    motion: "Drive the bar upward close to the body with elbows rising high.",
+    focus: "Show the bar traveling vertically close to the torso."
+  },
+  chinTuck: {
+    pattern: "neck",
+    label: "Chin Tuck",
+    setup: "Lie or stand with the head neutral and the chin gently drawn in.",
+    motion: "Glide the chin straight back, pause, then release.",
+    focus: "The head should translate back instead of tipping up or down."
+  },
+  neckIsometric: {
+    pattern: "neck",
+    label: "Neck Isometric",
+    setup: "Place one hand against the head while the neck stays neutral.",
+    motion: "Press lightly into the hand without letting the head move.",
+    focus: "Show resistance at the head with almost no visible neck motion."
+  },
+  proneNeckExtension: {
+    pattern: "neck",
+    label: "Prone Neck Extension",
+    setup: "Lie face down on a bench with the head just beyond the edge.",
+    motion: "Lift the head to neutral, then lower slightly.",
+    focus: "The bench supports the body while the neck moves gently."
+  },
+  bandNeckRotation: {
+    pattern: "neck",
+    label: "Band Neck Rotation",
+    setup: "Attach a band to the side of the head from a side anchor.",
+    motion: "Rotate the head slowly against the band and return.",
+    focus: "Keep the band connected to the head from the side."
+  },
+  harnessNeckExtension: {
+    pattern: "neck",
+    label: "Harness Neck Extension",
+    setup: "Attach the neck harness while hinged forward or supported on a bench.",
+    motion: "Extend the neck gently against the harness load, then lower.",
+    focus: "Keep the harness around the head and use a very small range."
+  },
+  birdDog: {
+    pattern: "core",
+    label: "Bird Dog",
+    setup: "Start on hands and knees on the mat.",
+    motion: "Reach one arm forward and the opposite leg backward, then switch sides.",
+    focus: "Keep the hips level while opposite limbs move."
+  },
+  backExtension: {
+    pattern: "hinge",
+    label: "Back Extension",
+    setup: "Set the hips on the roman chair pad with the feet anchored.",
+    motion: "Hinge the torso down, then extend back to a straight line.",
+    focus: "Move around the hips rather than overextending the low back."
+  },
+  romanianDeadlift: {
+    pattern: "hinge",
+    label: "Romanian Deadlift",
+    setup: "Stand with the bar or dumbbells close to the thighs and knees softly bent.",
+    motion: "Hinge the hips back while the load slides close to the legs, then stand tall.",
+    focus: "The load should stay close to the body through the hinge."
+  },
+  deadlift: {
+    pattern: "hinge",
+    label: "Deadlift",
+    setup: "Start with the bar on the floor close to the shins.",
+    motion: "Push the floor away and stand with the bar close, then return it to the floor.",
+    focus: "Show the bar starting lower than a Romanian deadlift."
+  },
+  deadBug: {
+    pattern: "core",
+    label: "Dead Bug",
+    setup: "Lie face up with arms reaching to the ceiling and hips and knees bent to 90 degrees.",
+    motion: "Extend the opposite arm and leg away, then return and switch sides.",
+    focus: "Keep the back position steady while opposite limbs move."
+  },
+  frontPlank: {
+    pattern: "core",
+    label: "Front Plank",
+    setup: "Hold a forearm plank with elbows under shoulders and body long.",
+    motion: "Maintain the hold with small breathing motion.",
+    focus: "The body should stay straight from head to heels."
+  },
+  cableCrunch: {
+    pattern: "core",
+    label: "Cable Crunch",
+    setup: "Kneel facing the cable with the high pulley above the head.",
+    motion: "Curl the ribs toward the pelvis, then return to tall kneeling.",
+    focus: "The cable should run from overhead to the hands near the head."
+  },
+  abWheelRollout: {
+    pattern: "core",
+    label: "Ab Wheel Rollout",
+    setup: "Kneel on the mat with both hands on the ab wheel under the shoulders.",
+    motion: "Roll the wheel forward while the body lengthens, then pull it back.",
+    focus: "Keep the wheel on the floor in front of the knees."
+  },
+  sidePlank: {
+    pattern: "core",
+    label: "Side Plank",
+    setup: "Stack the feet and support the body on one forearm.",
+    motion: "Hold the side plank with a steady trunk.",
+    focus: "Shoulders, hips, and ankles should form one long line."
+  },
+  pallofPress: {
+    pattern: "core",
+    label: "Pallof Press",
+    setup: "Stand sideways to the cable or band anchor with hands at the chest.",
+    motion: "Press the hands straight out from the chest, then return.",
+    focus: "The cable or band should pull from the side while the torso resists rotation."
+  },
+  woodChop: {
+    pattern: "core",
+    label: "Cable Wood Chop",
+    setup: "Stand beside the cable with the handle high and to one side.",
+    motion: "Move the hands diagonally across the body toward the opposite hip.",
+    focus: "Show a high-to-low diagonal cable path."
+  },
+  gluteBridge: {
+    pattern: "hinge",
+    label: "Glute Bridge",
+    setup: "Lie on the mat with knees bent and feet flat.",
+    motion: "Lift the hips until the torso and thighs line up, then lower.",
+    focus: "Keep the feet planted while the hips move."
+  },
+  stepUp: {
+    pattern: "squat",
+    label: "Step-Up",
+    setup: "Place one foot fully on the box with the other foot on the floor.",
+    motion: "Drive through the box foot to stand tall, then step back down.",
+    focus: "The box should sit under the working foot."
+  },
+  hipThrust: {
+    pattern: "hinge",
+    label: "Barbell Hip Thrust",
+    setup: "Rest the upper back on the bench with the bar across the hips.",
+    motion: "Drive the hips up to lockout, then lower under control.",
+    focus: "Keep the bench behind the shoulders and the bar over the hips."
+  },
+  splitSquat: {
+    pattern: "squat",
+    label: "Bulgarian Split Squat",
+    setup: "Place the rear foot on the bench and hold dumbbells at the sides.",
+    motion: "Lower the back knee toward the floor, then drive up through the front foot.",
+    focus: "Show the rear foot elevated behind the body."
+  },
+  boxSquat: {
+    pattern: "squat",
+    label: "Box Squat",
+    setup: "Stand in front of the box with feet planted.",
+    motion: "Sit back to lightly touch the box, then stand.",
+    focus: "Keep the box behind the hips."
+  },
+  gobletSquat: {
+    pattern: "squat",
+    label: "Goblet Squat",
+    setup: "Hold one dumbbell upright against the chest.",
+    motion: "Squat down with the weight at chest height, then stand.",
+    focus: "Keep the front-loaded weight close to the torso."
+  },
+  frontSquat: {
+    pattern: "squat",
+    label: "Front Squat",
+    setup: "Hold the barbell in the front rack across the shoulders.",
+    motion: "Squat down with an upright torso, then drive back up.",
+    focus: "The bar should stay at the front of the shoulders."
+  },
+  cyclistSquat: {
+    pattern: "squat",
+    label: "Heel-Elevated Squat",
+    setup: "Stand with both heels on the wedge and torso tall.",
+    motion: "Bend the knees deeply over the toes, then stand.",
+    focus: "Keep the wedge under the heels throughout."
+  },
+  ballLegCurl: {
+    pattern: "squat",
+    label: "Stability Ball Leg Curl",
+    setup: "Lie face up with heels on the ball and hips lifted.",
+    motion: "Curl the ball toward the hips by bending the knees, then roll it away.",
+    focus: "The ball should stay under the heels."
+  },
+  seatedLegCurl: {
+    pattern: "squat",
+    label: "Seated Leg Curl",
+    setup: "Sit in the machine with the pad in front of the lower legs.",
+    motion: "Bend the knees to pull the pad down and back, then return.",
+    focus: "Show a seated body with lower legs moving around the knee."
+  },
+  nordicCurl: {
+    pattern: "squat",
+    label: "Nordic Hamstring Curl",
+    setup: "Kneel with the ankles anchored behind the body.",
+    motion: "Lower the straight torso forward from the knees, then pull back up.",
+    focus: "The feet should remain fixed while the body pivots forward."
+  },
+  standingCalfRaise: {
+    pattern: "calf",
+    label: "Standing Calf Raise",
+    setup: "Stand with the balls of the feet on the step and heels free.",
+    motion: "Rise onto the toes, then lower the heels into a stretch.",
+    focus: "The step should sit under the forefoot."
+  },
+  seatedCalfRaise: {
+    pattern: "calf",
+    label: "Seated Calf Raise",
+    setup: "Sit in the machine with knees bent and the pad over the thighs.",
+    motion: "Raise the heels, pause, then lower.",
+    focus: "Show bent knees to distinguish it from a standing calf raise."
+  },
+  singleLegCalfRaise: {
+    pattern: "calf",
+    label: "Single-Leg Calf Raise",
+    setup: "Stand on one forefoot on the step while the other foot floats.",
+    motion: "Rise and lower on the working ankle.",
+    focus: "Only one foot should be loaded on the step."
+  },
+  donkeyCalfRaise: {
+    pattern: "calf",
+    label: "Donkey Calf Raise",
+    setup: "Hinge forward with the forefeet on the platform and load over the hips.",
+    motion: "Raise and lower the heels while the torso stays hinged.",
+    focus: "Show the body bent forward instead of upright."
+  },
+  toeYoga: {
+    pattern: "ankle",
+    label: "Toe Yoga",
+    setup: "Stand or sit with the foot flat on the floor.",
+    motion: "Lift the big toe and other toes in small alternating motions.",
+    focus: "Keep the foot on the floor and make the motion small."
+  },
+  ankleAlphabet: {
+    pattern: "ankle",
+    label: "Ankle Alphabet",
+    setup: "Sit with one leg extended and the foot off the floor.",
+    motion: "Trace small letters with the toes by moving the ankle.",
+    focus: "The shin stays mostly still while the foot draws the shapes."
+  },
+  tibialisRaise: {
+    pattern: "ankle",
+    label: "Tibialis Raise",
+    setup: "Lean the back against the wall with heels on the floor and toes lowered.",
+    motion: "Lift the toes toward the shins, then lower.",
+    focus: "Keep the heels planted while only the front of the feet lift."
+  },
+  balanceReach: {
+    pattern: "ankle",
+    label: "Single-Leg Balance Reach",
+    setup: "Stand on one foot with the other foot ready to reach.",
+    motion: "Reach the free foot forward and to the side while the stance foot stabilizes.",
+    focus: "Keep the working foot rooted and the arch active."
+  },
+  ankleEversion: {
+    pattern: "ankle",
+    label: "Band Ankle Eversion",
+    setup: "Sit with a band attached to the outside of the foot from a side anchor.",
+    motion: "Turn the foot outward against the band, then return.",
+    focus: "The band should connect to the foot, not the hands."
   }
 };
 
-function inferAnimationPattern(exercise) {
+const exerciseAnimationVariants = new Map([
+  ["Incline Push-Up", "inclinePushUp"],
+  ["Dumbbell Bench Press", "benchPressDumbbell"],
+  ["Cable Fly", "cableFly"],
+  ["Paused Barbell Bench Press", "benchPressBarbell"],
+  ["Wall Slide", "wallSlide"],
+  ["Dumbbell Lateral Raise", "lateralRaise"],
+  ["Seated Dumbbell Press", "seatedOverheadPress"],
+  ["Half-Kneeling Landmine Press", "landminePress"],
+  ["Bench Dip", "benchDip"],
+  ["Cable Pressdown", "cablePressdown"],
+  ["Overhead Dumbbell Extension", "overheadTricepsExtension"],
+  ["Close-Grip Bench Press", "closeGripBenchPress"],
+  ["Band Curl", "bandCurl"],
+  ["Alternating Dumbbell Curl", "dumbbellCurl"],
+  ["Incline Dumbbell Curl", "inclineDumbbellCurl"],
+  ["Weighted Chin-Up", "chinUp"],
+  ["Farmer Carry", "farmerCarry"],
+  ["Wrist Curl", "wristCurl"],
+  ["Reverse Curl", "reverseCurl"],
+  ["Towel Pull-Up Hang", "towelHang"],
+  ["Band Lat Pulldown", "latPulldown"],
+  ["Assisted Pull-Up", "pullUp"],
+  ["Single-Arm Cable Row", "cableRow"],
+  ["Weighted Pull-Up", "pullUp"],
+  ["Prone Y Raise", "proneYRaise"],
+  ["Dumbbell Shrug", "shrug"],
+  ["Face Pull", "facePull"],
+  ["Snatch-Grip High Pull", "highPull"],
+  ["Chin Tuck", "chinTuck"],
+  ["Neck Isometric Hold", "neckIsometric"],
+  ["Prone Neck Extension", "proneNeckExtension"],
+  ["Band Neck Rotation", "bandNeckRotation"],
+  ["Harness Neck Extension", "harnessNeckExtension"],
+  ["Bird Dog", "birdDog"],
+  ["Back Extension", "backExtension"],
+  ["Romanian Deadlift", "romanianDeadlift"],
+  ["Deficit Deadlift", "deadlift"],
+  ["Dead Bug", "deadBug"],
+  ["Front Plank", "frontPlank"],
+  ["Cable Crunch", "cableCrunch"],
+  ["Ab Wheel Rollout", "abWheelRollout"],
+  ["Side Plank", "sidePlank"],
+  ["Pallof Press", "pallofPress"],
+  ["Cable Wood Chop", "woodChop"],
+  ["Suitcase Carry", "suitcaseCarry"],
+  ["Glute Bridge", "gluteBridge"],
+  ["Step-Up", "stepUp"],
+  ["Barbell Hip Thrust", "hipThrust"],
+  ["Bulgarian Split Squat", "splitSquat"],
+  ["Box Squat", "boxSquat"],
+  ["Goblet Squat", "gobletSquat"],
+  ["Front Squat", "frontSquat"],
+  ["Heel-Elevated Cyclist Squat", "cyclistSquat"],
+  ["Stability Ball Leg Curl", "ballLegCurl"],
+  ["Dumbbell Romanian Deadlift", "romanianDeadlift"],
+  ["Seated Leg Curl", "seatedLegCurl"],
+  ["Nordic Hamstring Curl", "nordicCurl"],
+  ["Standing Calf Raise", "standingCalfRaise"],
+  ["Seated Calf Raise", "seatedCalfRaise"],
+  ["Single-Leg Calf Raise", "singleLegCalfRaise"],
+  ["Loaded Donkey Calf Raise", "donkeyCalfRaise"],
+  ["Toe Yoga", "toeYoga"],
+  ["Ankle Alphabet", "ankleAlphabet"],
+  ["Tibialis Raise", "tibialisRaise"],
+  ["Single-Leg Balance Reach", "balanceReach"],
+  ["Band Resisted Ankle Eversion", "ankleEversion"]
+]);
+
+function inferAnimationVariant(exercise) {
   const name = exercise.name.toLowerCase();
   const equipment = exercise.equipment.toLowerCase();
 
-  if (/neck|chin tuck|harness/.test(name) || equipment.includes("neck harness")) return "neck";
-  if (/toe|ankle|tibialis|balance/.test(name)) return "ankle";
-  if (/calf|donkey/.test(name)) return "calf";
-  if (/carry|hang/.test(name)) return "carry";
-  if (/plank|bug|crunch|ab wheel|wood chop|pallof|rollout/.test(name)) return "core";
-  if (/deadlift|romanian|hinge|back extension|bridge|hip thrust/.test(name)) return "hinge";
-  if (/squat|step-up|lunge|leg curl|nordic/.test(name)) return "squat";
-  if (/curl/.test(name)) return "curl";
-  if (/raise|slide|shrug|face pull|fly|high pull/.test(name)) return "raise";
-  if (/pull|pulldown|row|chin-up/.test(name)) return "pull";
-  if (/press|push-up|dip|extension/.test(name)) return "press";
+  if (/neck|chin tuck|harness/.test(name) || equipment.includes("neck harness")) return "neckIsometric";
+  if (/toe|ankle|tibialis|balance/.test(name)) return "ankleAlphabet";
+  if (/calf|donkey/.test(name)) return "standingCalfRaise";
+  if (/carry/.test(name)) return "farmerCarry";
+  if (/hang/.test(name)) return "towelHang";
+  if (/plank/.test(name)) return "frontPlank";
+  if (/bug/.test(name)) return "deadBug";
+  if (/crunch/.test(name)) return "cableCrunch";
+  if (/ab wheel|rollout/.test(name)) return "abWheelRollout";
+  if (/wood chop/.test(name)) return "woodChop";
+  if (/pallof/.test(name)) return "pallofPress";
+  if (/deadlift|romanian/.test(name)) return "romanianDeadlift";
+  if (/back extension/.test(name)) return "backExtension";
+  if (/bridge/.test(name)) return "gluteBridge";
+  if (/hip thrust/.test(name)) return "hipThrust";
+  if (/step-up/.test(name)) return "stepUp";
+  if (/split squat/.test(name)) return "splitSquat";
+  if (/squat/.test(name)) return "gobletSquat";
+  if (/leg curl|nordic/.test(name)) return "seatedLegCurl";
+  if (/curl/.test(name)) return "dumbbellCurl";
+  if (/wall slide/.test(name)) return "wallSlide";
+  if (/shrug/.test(name)) return "shrug";
+  if (/face pull/.test(name)) return "facePull";
+  if (/raise/.test(name)) return "lateralRaise";
+  if (/fly/.test(name)) return "cableFly";
+  if (/pull|pulldown|row|chin-up/.test(name)) return "pullUp";
+  if (/dip/.test(name)) return "benchDip";
+  if (/press|push-up|extension/.test(name)) return "benchPressBarbell";
 
-  return "press";
+  return "inclinePushUp";
 }
 
 const equipmentNameMap = new Map([
@@ -479,10 +947,12 @@ export function getExercisePool(muscleId, level, selectedEquipmentIds = []) {
 }
 
 export function getExerciseAnimation(exercise) {
-  const pattern = inferAnimationPattern(exercise);
+  const variant = exerciseAnimationVariants.get(exercise.name) ?? inferAnimationVariant(exercise);
+  const profile = animationProfiles[variant] ?? animationProfiles.inclinePushUp;
+
   return {
-    pattern,
-    ...animationPatterns[pattern]
+    variant,
+    ...profile
   };
 }
 
