@@ -437,6 +437,26 @@ export function getEquipmentOptions() {
     .sort((a, b) => a.label.localeCompare(b.label));
 }
 
+export function getEquipmentIdsForMuscles(muscleIds, level) {
+  const maxLevel = level ? levelOrder.indexOf(level) : levelOrder.length - 1;
+  const equipmentIds = new Set();
+
+  muscleIds.forEach((muscleId) => {
+    const muscle = getMuscle(muscleId);
+    if (!muscle) return;
+
+    muscle.exercises
+      .filter((exercise) => levelOrder.indexOf(exercise.level) <= maxLevel)
+      .forEach((exercise) => {
+        getExerciseEquipmentTypes(exercise.equipment).forEach((equipment) => {
+          equipmentIds.add(equipment.id);
+        });
+      });
+  });
+
+  return equipmentIds;
+}
+
 export function exerciseMatchesEquipment(exercise, selectedEquipmentIds = []) {
   if (selectedEquipmentIds.length === 0) {
     return true;

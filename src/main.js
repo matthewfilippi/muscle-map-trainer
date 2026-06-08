@@ -1,5 +1,6 @@
 import "./styles.css";
 import { BodyScene } from "./bodyScene.js";
+import { ExerciseAnimationScene } from "./exerciseAnimationScene.js";
 import {
   LEVELS,
   MUSCLES,
@@ -7,8 +8,10 @@ import {
   getActiveSplits,
   getAllowedMuscleIds,
   getCompatibleSplitIds,
+  getEquipmentIdsForMuscles,
   getEquipmentOptions,
   getExerciseAnimation,
+  getExerciseEquipmentTypes,
   getExercisePool,
   getMuscle
 } from "./data.js";
@@ -25,6 +28,7 @@ const appState = {
 };
 
 let bodyScene = null;
+let exerciseAnimationScene = null;
 
 const app = document.querySelector("#app");
 
@@ -59,6 +63,23 @@ function selectMuscle(id) {
   updateMuscleButtons();
 }
 
+function destroyExerciseAnimationScene() {
+  if (exerciseAnimationScene) {
+    exerciseAnimationScene.destroy();
+    exerciseAnimationScene = null;
+  }
+}
+
+function getAvailableRoutineEquipmentIds() {
+  return getEquipmentIdsForMuscles(appState.selectedRoutineMuscles, appState.level);
+}
+
+function pruneUnavailableEquipment() {
+  const availableEquipmentIds = getAvailableRoutineEquipmentIds();
+  appState.selectedEquipment = appState.selectedEquipment.filter((equipmentId) => availableEquipmentIds.has(equipmentId));
+  return availableEquipmentIds;
+}
+
 function buildShell() {
   app.innerHTML = `
     <div class="app-shell">
@@ -91,6 +112,7 @@ function render() {
     button.classList.toggle("is-active", button.dataset.page === appState.page);
   });
 
+  destroyExerciseAnimationScene();
   if (bodyScene) {
     bodyScene.destroy();
     bodyScene = null;
@@ -219,9 +241,9 @@ function renderRoutinePage() {
             </button>
           `).join("")}
         </div>
-        <div class="equipment-filter" id="equipmentFilter"></div>
         <div class="split-summary" id="splitSummary"></div>
         <div class="routine-muscles" id="routineMuscles"></div>
+        <div class="equipment-filter" id="equipmentFilter"></div>
       </div>
       <div class="routine-result" id="routineResult" aria-live="polite"></div>
     </section>
@@ -231,6 +253,7 @@ function renderRoutinePage() {
   pageRoot.querySelectorAll(".level-button").forEach((button) => {
     button.addEventListener("click", () => {
       appState.level = button.dataset.level;
+      pruneUnavailableEquipment();
       generateRoutine();
       renderRoutinePage();
     });
@@ -284,6 +307,7 @@ function renderEquipmentFilter() {
   if (!root) return;
 
   const equipmentOptions = getEquipmentOptions();
+  const availableEquipmentIds = pruneUnavailableEquipment();
   const selected = appState.selectedEquipment;
   root.innerHTML = `
     <div class="filter-heading">
@@ -294,16 +318,22 @@ function renderEquipmentFilter() {
       <button class="text-button" type="button" id="clearEquipment" ${selected.length === 0 ? "disabled" : ""}>All Equipment</button>
     </div>
     <div class="equipment-grid">
-      ${equipmentOptions.map((equipment) => `
+      ${equipmentOptions.map((equipment) => {
+        const isSelected = selected.includes(equipment.id);
+        const isAvailable = availableEquipmentIds.has(equipment.id);
+        return `
         <button
-          class="equipment-toggle ${selected.includes(equipment.id) ? "is-selected" : ""}"
+          class="equipment-toggle ${isSelected ? "is-selected" : isAvailable ? "is-highlighted" : ""}"
           type="button"
           data-equipment="${equipment.id}"
-          aria-pressed="${selected.includes(equipment.id)}"
+          aria-pressed="${isSelected}"
+          ${isAvailable ? "" : "disabled"}
+          title="${isAvailable ? `${equipment.label} is used by the selected muscle groups` : equipment.label}"
         >
           ${equipment.label}
         </button>
-      `).join("")}
+      `;
+      }).join("")}
     </div>
   `;
 
@@ -319,12 +349,15 @@ function renderEquipmentFilter() {
 }
 
 function toggleEquipment(id) {
+  if (!getAvailableRoutineEquipmentIds().has(id)) return;
+
   if (appState.selectedEquipment.includes(id)) {
     appState.selectedEquipment = appState.selectedEquipment.filter((equipmentId) => equipmentId !== id);
   } else {
     appState.selectedEquipment = [...appState.selectedEquipment, id];
   }
 
+  pruneUnavailableEquipment();
   generateRoutine();
   renderRoutinePage();
 }
@@ -339,6 +372,7 @@ function toggleRoutineMuscle(id) {
     appState.selectedRoutineMuscles = [...selected, id];
   }
 
+  pruneUnavailableEquipment();
   generateRoutine();
   renderRoutinePage();
 }
@@ -404,6 +438,7 @@ function generateRoutine() {
 function renderRoutineResult() {
   const root = app.querySelector("#routineResult");
   if (!root) return;
+  destroyExerciseAnimationScene();
 
   if (appState.generatedRoutine.length === 0) {
     root.innerHTML = `
@@ -481,48 +516,9 @@ function openExerciseAnimation(index) {
 }
 
 function closeExerciseAnimation() {
+  destroyExerciseAnimationScene();
   appState.activeAnimationIndex = null;
   renderRoutineResult();
-}
-
-function motionFigure(pattern, color) {
-  return `
-    <svg class="motion-figure motion-${pattern}" style="--motion-color: ${color}" viewBox="0 0 320 260" role="img" aria-label="Exercise animation">
-      <path class="motion-arrow" d="M78 198 C132 224 188 224 242 198" />
-      <line class="floor-line" x1="64" y1="224" x2="256" y2="224" />
-      <g class="motion-skeleton">
-        <g class="head-group">
-          <circle class="head" cx="160" cy="50" r="18" />
-          <line class="neck-line" x1="160" y1="68" x2="160" y2="84" />
-        </g>
-        <line class="torso" x1="160" y1="84" x2="160" y2="145" />
-        <g class="arms">
-          <g class="left-arm">
-            <line class="limb upper-arm" x1="160" y1="92" x2="126" y2="120" />
-            <line class="limb forearm" x1="126" y1="120" x2="108" y2="158" />
-            <circle class="weight" cx="105" cy="162" r="8" />
-          </g>
-          <g class="right-arm">
-            <line class="limb upper-arm" x1="160" y1="92" x2="194" y2="120" />
-            <line class="limb forearm" x1="194" y1="120" x2="212" y2="158" />
-            <circle class="weight" cx="215" cy="162" r="8" />
-          </g>
-        </g>
-        <g class="legs">
-          <g class="left-leg">
-            <line class="limb thigh" x1="160" y1="145" x2="132" y2="180" />
-            <line class="limb shin" x1="132" y1="180" x2="114" y2="218" />
-          </g>
-          <g class="right-leg">
-            <line class="limb thigh" x1="160" y1="145" x2="188" y2="180" />
-            <line class="limb shin" x1="188" y1="180" x2="206" y2="218" />
-          </g>
-        </g>
-        <ellipse class="foot left-foot" cx="108" cy="222" rx="20" ry="6" />
-        <ellipse class="foot right-foot" cx="212" cy="222" rx="20" ry="6" />
-      </g>
-    </svg>
-  `;
 }
 
 function renderExerciseAnimationModal(root) {
@@ -543,7 +539,7 @@ function renderExerciseAnimationModal(root) {
           <button class="icon-button modal-close-button" type="button" data-close-animation aria-label="Close animation">X</button>
         </div>
         <div class="motion-stage">
-          ${motionFigure(animation.pattern, muscle.color)}
+          <div class="exercise-3d-stage" data-exercise-animation></div>
         </div>
         <div class="motion-copy">
           <div>
@@ -571,6 +567,16 @@ function renderExerciseAnimationModal(root) {
       }
     });
   });
+
+  const stage = root.querySelector("[data-exercise-animation]");
+  if (stage) {
+    exerciseAnimationScene = new ExerciseAnimationScene(stage, {
+      pattern: animation.pattern,
+      equipment: getExerciseEquipmentTypes(item.exercise.equipment),
+      muscleColor: muscle.color,
+      exerciseName: item.exercise.name
+    });
+  }
 }
 
 window.addEventListener("keydown", (event) => {

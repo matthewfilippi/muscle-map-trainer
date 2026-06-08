@@ -444,10 +444,28 @@ h4 {
   border-color: var(--green);
 }
 
+.equipment-toggle.is-highlighted {
+  border-color: #d99b18;
+  background: #fff2b8;
+  color: #4a3510;
+}
+
+.equipment-toggle.is-highlighted:hover {
+  border-color: #b97a0f;
+  background: #ffe68a;
+}
+
 .equipment-toggle.is-selected {
   border-color: var(--green-dark);
   background: var(--green-dark);
   color: #ffffff;
+}
+
+.equipment-toggle:disabled {
+  cursor: not-allowed;
+  border-color: #dce3df;
+  background: #eef2ee;
+  color: #9aa39f;
 }
 
 .split-summary {
@@ -628,7 +646,7 @@ h4 {
 
 .motion-stage {
   margin: 18px;
-  min-height: 280px;
+  min-height: 340px;
   display: grid;
   place-items: center;
   border: 1px solid #dce6e1;
@@ -637,109 +655,16 @@ h4 {
     linear-gradient(180deg, #fbfdfb 0%, #eef6f1 100%);
 }
 
-.motion-figure {
-  width: min(100%, 520px);
-  height: auto;
-  overflow: visible;
+.exercise-3d-stage {
+  width: 100%;
+  height: clamp(320px, 48vh, 460px);
+  min-height: 320px;
 }
 
-.motion-figure .head {
-  fill: #f6d6bf;
-  stroke: #26342e;
-  stroke-width: 5;
-}
-
-.motion-figure .torso,
-.motion-figure .neck-line,
-.motion-figure .limb {
-  stroke: var(--motion-color);
-  stroke-width: 12;
-  stroke-linecap: round;
-}
-
-.motion-figure .torso,
-.motion-figure .neck-line {
-  stroke: #26342e;
-}
-
-.motion-figure .weight {
-  fill: #26342e;
-}
-
-.motion-figure .foot {
-  fill: var(--motion-color);
-}
-
-.motion-figure .floor-line {
-  stroke: #b7c4bd;
-  stroke-width: 3;
-  stroke-linecap: round;
-}
-
-.motion-arrow {
-  fill: none;
-  stroke: var(--motion-color);
-  stroke-width: 4;
-  stroke-dasharray: 16 12;
-  stroke-linecap: round;
-  opacity: 0.55;
-  animation: motionDash 1.8s linear infinite;
-}
-
-.motion-skeleton,
-.motion-figure .arms,
-.motion-figure .legs,
-.motion-figure .head-group,
-.motion-figure .foot {
-  transform-box: view-box;
-}
-
-.motion-press .arms {
-  animation: pressMotion 1.7s ease-in-out infinite;
-}
-
-.motion-pull .arms {
-  animation: pullMotion 1.7s ease-in-out infinite;
-}
-
-.motion-curl .arms {
-  animation: curlMotion 1.5s ease-in-out infinite;
-}
-
-.motion-raise .arms {
-  animation: raiseMotion 1.8s ease-in-out infinite;
-}
-
-.motion-squat .motion-skeleton {
-  animation: squatMotion 1.9s ease-in-out infinite;
-}
-
-.motion-hinge .motion-skeleton {
-  transform-origin: 160px 145px;
-  animation: hingeMotion 1.9s ease-in-out infinite;
-}
-
-.motion-core .motion-skeleton {
-  animation: coreMotion 1.8s ease-in-out infinite;
-}
-
-.motion-carry .motion-skeleton {
-  animation: carryMotion 1.5s ease-in-out infinite;
-}
-
-.motion-calf .motion-skeleton {
-  animation: calfMotion 1.5s ease-in-out infinite;
-}
-
-.motion-ankle .left-foot,
-.motion-ankle .right-foot {
-  transform-origin: center;
-  animation: ankleMotion 1.4s ease-in-out infinite;
-}
-
-.motion-neck .head-group {
-  transform-origin: 160px 84px;
-  animation: neckMotion 1.8s ease-in-out infinite;
+.exercise-3d-stage canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .motion-copy {
@@ -769,122 +694,6 @@ h4 {
 
 .empty-state {
   padding: 24px;
-}
-
-@keyframes motionDash {
-  to {
-    stroke-dashoffset: -56;
-  }
-}
-
-@keyframes pressMotion {
-  0%,
-  100% {
-    transform: translateY(14px);
-  }
-  50% {
-    transform: translateY(-34px);
-  }
-}
-
-@keyframes pullMotion {
-  0%,
-  100% {
-    transform: translateY(-26px) scaleX(1.12);
-  }
-  50% {
-    transform: translateY(10px) scaleX(0.88);
-  }
-}
-
-@keyframes curlMotion {
-  0%,
-  100% {
-    transform: translateY(18px) scaleY(1.05);
-  }
-  50% {
-    transform: translateY(-18px) scaleY(0.72);
-  }
-}
-
-@keyframes raiseMotion {
-  0%,
-  100% {
-    transform: translateY(18px) rotate(0deg);
-  }
-  50% {
-    transform: translateY(-42px) rotate(-4deg);
-  }
-}
-
-@keyframes squatMotion {
-  0%,
-  100% {
-    transform: translateY(0) scaleY(1);
-  }
-  50% {
-    transform: translateY(24px) scaleY(0.9);
-  }
-}
-
-@keyframes hingeMotion {
-  0%,
-  100% {
-    transform: rotate(0deg);
-  }
-  50% {
-    transform: rotate(13deg) translateY(8px);
-  }
-}
-
-@keyframes coreMotion {
-  0%,
-  100% {
-    transform: translateX(-16px) rotate(-2deg);
-  }
-  50% {
-    transform: translateX(18px) rotate(2deg);
-  }
-}
-
-@keyframes carryMotion {
-  0%,
-  100% {
-    transform: translateX(-18px) translateY(0);
-  }
-  50% {
-    transform: translateX(18px) translateY(-8px);
-  }
-}
-
-@keyframes calfMotion {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-18px);
-  }
-}
-
-@keyframes ankleMotion {
-  0%,
-  100% {
-    transform: rotate(-8deg);
-  }
-  50% {
-    transform: rotate(10deg);
-  }
-}
-
-@keyframes neckMotion {
-  0%,
-  100% {
-    transform: rotate(-5deg);
-  }
-  50% {
-    transform: rotate(5deg);
-  }
 }
 
 .safety-note {
@@ -986,23 +795,5 @@ h4 {
   .motion-stage {
     min-height: 230px;
     margin: 14px;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .motion-arrow,
-  .motion-press .arms,
-  .motion-pull .arms,
-  .motion-curl .arms,
-  .motion-raise .arms,
-  .motion-squat .motion-skeleton,
-  .motion-hinge .motion-skeleton,
-  .motion-core .motion-skeleton,
-  .motion-carry .motion-skeleton,
-  .motion-calf .motion-skeleton,
-  .motion-ankle .left-foot,
-  .motion-ankle .right-foot,
-  .motion-neck .head-group {
-    animation: none;
   }
 }

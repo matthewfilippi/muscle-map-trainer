@@ -3,6 +3,7 @@ import { MUSCLES } from "./data.js";
 const selectedEquipment = new Set();
 const filterId = "equipmentFilter";
 const styleId = "equipment-filter-fallback-style";
+const levelOrder = ["beginner", "intermediate", "expert"];
 
 const equipmentNameMap = new Map([
   ["ab wheel", "Ab Wheel"],
@@ -72,6 +73,37 @@ function getEquipmentOptions() {
   return [...options.entries()]
     .map(([id, label]) => ({ id, label }))
     .sort((a, b) => a.label.localeCompare(b.label));
+}
+
+function getSelectedMuscleIds() {
+  return [...document.querySelectorAll(".routine-toggle.is-selected, .routine-toggle[aria-pressed='true']")]
+    .map((button) => button.dataset.muscle)
+    .filter(Boolean);
+}
+
+function getCurrentLevel() {
+  return document.querySelector(".level-button[aria-checked='true']")?.dataset.level ?? "beginner";
+}
+
+function getAvailableEquipmentIds() {
+  const selectedMuscleIds = getSelectedMuscleIds();
+  const maxLevel = levelOrder.indexOf(getCurrentLevel());
+  const equipmentIds = new Set();
+
+  selectedMuscleIds.forEach((muscleId) => {
+    const muscle = MUSCLES.find((candidate) => candidate.id === muscleId);
+    if (!muscle) return;
+
+    muscle.exercises
+      .filter((exercise) => levelOrder.indexOf(exercise.level) <= maxLevel)
+      .forEach((exercise) => {
+        getExerciseEquipmentTypes(exercise.equipment).forEach((equipment) => {
+          equipmentIds.add(equipment.id);
+        });
+      });
+  });
+
+  return equipmentIds;
 }
 
 function injectStyles() {
@@ -151,6 +183,19 @@ function injectStyles() {
       color: #ffffff;
     }
 
+    .equipment-toggle.is-highlighted {
+      border-color: #d99b18;
+      background: #fff2b8;
+      color: #4a3510;
+    }
+
+    .equipment-toggle:disabled {
+      cursor: not-allowed;
+      border-color: #dce3df;
+      background: #eef2ee;
+      color: #9aa39f;
+    }
+
     .equipment-filter-note {
       margin-bottom: 18px;
       padding: 12px 14px;
@@ -165,6 +210,12 @@ function injectStyles() {
 
 function renderFilter(root) {
   const options = getEquipmentOptions();
+  const availableEquipmentIds = getAvailableEquipmentIds();
+  [...selectedEquipment].forEach((equipmentId) => {
+    if (!availableEquipmentIds.has(equipmentId)) {
+      selectedEquipment.delete(equipmentId);
+    }
+  });
   const selected = [...selectedEquipment];
 
   root.innerHTML = `
@@ -176,16 +227,22 @@ function renderFilter(root) {
       <button class="text-button" type="button" id="clearEquipment" ${selected.length === 0 ? "disabled" : ""}>All Equipment</button>
     </div>
     <div class="equipment-grid">
-      ${options.map((equipment) => `
+      ${options.map((equipment) => {
+        const isSelected = selectedEquipment.has(equipment.id);
+        const isAvailable = availableEquipmentIds.has(equipment.id);
+        return `
         <button
-          class="equipment-toggle ${selectedEquipment.has(equipment.id) ? "is-selected" : ""}"
+          class="equipment-toggle ${isSelected ? "is-selected" : isAvailable ? "is-highlighted" : ""}"
           type="button"
           data-equipment="${equipment.id}"
-          aria-pressed="${selectedEquipment.has(equipment.id)}"
+          aria-pressed="${isSelected}"
+          ${isAvailable ? "" : "disabled"}
+          title="${isAvailable ? `${equipment.label} is used by the selected muscle groups` : equipment.label}"
         >
           ${equipment.label}
         </button>
-      `).join("")}
+      `;
+      }).join("")}
     </div>
   `;
 
@@ -198,6 +255,8 @@ function renderFilter(root) {
   root.querySelectorAll(".equipment-toggle").forEach((button) => {
     button.addEventListener("click", () => {
       const equipmentId = button.dataset.equipment;
+      if (!getAvailableEquipmentIds().has(equipmentId)) return;
+
       if (selectedEquipment.has(equipmentId)) {
         selectedEquipment.delete(equipmentId);
       } else {
@@ -216,16 +275,16 @@ function ensureFilter() {
     return;
   }
 
-  const levelControl = document.querySelector(".routine-builder .level-control");
-  if (!levelControl) return;
+  const routineMuscles = document.querySelector(".routine-builder .routine-muscles");
+  if (!routineMuscles) return;
 
   const filter = existingFilter ?? document.createElement("div");
   filter.id = filterId;
   filter.className = "equipment-filter";
   filter.dataset.fallback = "true";
 
-  if (!existingFilter) {
-    levelControl.insertAdjacentElement("afterend", filter);
+  if (!existingFilter || filter.previousElementSibling !== routineMuscles) {
+    routineMuscles.insertAdjacentElement("afterend", filter);
   }
 
   renderFilter(filter);
