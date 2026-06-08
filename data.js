@@ -279,6 +279,94 @@ export const SPLITS = [
 
 const levelOrder = ["beginner", "intermediate", "expert"];
 
+const animationPatterns = {
+  press: {
+    label: "Press",
+    setup: "Brace the torso and move the hands away from the body under control.",
+    motion: "Press out, pause briefly, then return through the same path.",
+    focus: "Keep shoulders packed and finish each rep without rushing."
+  },
+  pull: {
+    label: "Pull",
+    setup: "Set the shoulder blades, keep the ribs quiet, and start from a long reach.",
+    motion: "Pull the elbows toward the body, pause, then return with control.",
+    focus: "Lead with the elbows instead of shrugging the neck."
+  },
+  curl: {
+    label: "Curl",
+    setup: "Stand tall with upper arms still and wrists stacked.",
+    motion: "Bend the elbows, squeeze at the top, then lower slowly.",
+    focus: "Avoid swinging the torso to move the load."
+  },
+  raise: {
+    label: "Raise",
+    setup: "Set the shoulder blades and use a light, controllable load.",
+    motion: "Raise the arms smoothly, pause near the top, then lower with control.",
+    focus: "Stop before the shoulders shrug upward."
+  },
+  squat: {
+    label: "Squat",
+    setup: "Plant the feet, brace the trunk, and keep the knees tracking over the toes.",
+    motion: "Sit down between the hips, pause, then drive the floor away.",
+    focus: "Keep the whole foot grounded through the rep."
+  },
+  hinge: {
+    label: "Hinge",
+    setup: "Brace, soften the knees, and push the hips back.",
+    motion: "Lower until the hips load, then stand tall by driving the hips through.",
+    focus: "Keep the back neutral and the load close."
+  },
+  core: {
+    label: "Core",
+    setup: "Brace the ribs toward the pelvis before the movement starts.",
+    motion: "Move the limbs or torso while the trunk resists unwanted motion.",
+    focus: "Keep breathing without losing the brace."
+  },
+  carry: {
+    label: "Carry",
+    setup: "Stand tall with the weight controlled and shoulders level.",
+    motion: "Walk with quiet, even steps while staying braced.",
+    focus: "Resist leaning or twisting as fatigue builds."
+  },
+  calf: {
+    label: "Calf Raise",
+    setup: "Stack the ankle under the knee and use a full comfortable range.",
+    motion: "Rise onto the ball of the foot, pause, then lower into a stretch.",
+    focus: "Move straight up and down without rolling the ankle."
+  },
+  ankle: {
+    label: "Foot & Ankle",
+    setup: "Use a slow range of motion and keep the shin quiet.",
+    motion: "Move through the foot or ankle while maintaining balance and control.",
+    focus: "Keep the arch active and avoid gripping with the toes."
+  },
+  neck: {
+    label: "Neck Control",
+    setup: "Start tall with the chin lightly tucked.",
+    motion: "Move or resist pressure slowly through a pain-free range.",
+    focus: "Use very light effort and stop if symptoms appear."
+  }
+};
+
+function inferAnimationPattern(exercise) {
+  const name = exercise.name.toLowerCase();
+  const equipment = exercise.equipment.toLowerCase();
+
+  if (/neck|chin tuck|harness/.test(name) || equipment.includes("neck harness")) return "neck";
+  if (/toe|ankle|tibialis|balance/.test(name)) return "ankle";
+  if (/calf|donkey/.test(name)) return "calf";
+  if (/carry|hang/.test(name)) return "carry";
+  if (/plank|bug|crunch|ab wheel|wood chop|pallof|rollout/.test(name)) return "core";
+  if (/deadlift|romanian|hinge|back extension|bridge|hip thrust/.test(name)) return "hinge";
+  if (/squat|step-up|lunge|leg curl|nordic/.test(name)) return "squat";
+  if (/curl/.test(name)) return "curl";
+  if (/raise|slide|shrug|face pull|fly|high pull/.test(name)) return "raise";
+  if (/pull|pulldown|row|chin-up/.test(name)) return "pull";
+  if (/press|push-up|dip|extension/.test(name)) return "press";
+
+  return "press";
+}
+
 const equipmentNameMap = new Map([
   ["ab wheel", "Ab Wheel"],
   ["anchor", "Anchor"],
@@ -349,6 +437,26 @@ export function getEquipmentOptions() {
     .sort((a, b) => a.label.localeCompare(b.label));
 }
 
+export function getEquipmentIdsForMuscles(muscleIds, level) {
+  const maxLevel = level ? levelOrder.indexOf(level) : levelOrder.length - 1;
+  const equipmentIds = new Set();
+
+  muscleIds.forEach((muscleId) => {
+    const muscle = getMuscle(muscleId);
+    if (!muscle) return;
+
+    muscle.exercises
+      .filter((exercise) => levelOrder.indexOf(exercise.level) <= maxLevel)
+      .forEach((exercise) => {
+        getExerciseEquipmentTypes(exercise.equipment).forEach((equipment) => {
+          equipmentIds.add(equipment.id);
+        });
+      });
+  });
+
+  return equipmentIds;
+}
+
 export function exerciseMatchesEquipment(exercise, selectedEquipmentIds = []) {
   if (selectedEquipmentIds.length === 0) {
     return true;
@@ -368,6 +476,14 @@ export function getExercisePool(muscleId, level, selectedEquipmentIds = []) {
   return muscle.exercises.filter(
     (exercise) => levelOrder.indexOf(exercise.level) <= maxLevel && exerciseMatchesEquipment(exercise, selectedEquipmentIds)
   );
+}
+
+export function getExerciseAnimation(exercise) {
+  const pattern = inferAnimationPattern(exercise);
+  return {
+    pattern,
+    ...animationPatterns[pattern]
+  };
 }
 
 export function getCompatibleSplitIds(selectedMuscles) {
