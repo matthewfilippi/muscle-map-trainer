@@ -318,9 +318,9 @@ const animationProfiles = {
   lateralRaise: {
     pattern: "raise",
     label: "Lateral Raise",
-    setup: "Stand tall with dumbbells at the sides and a slight, fixed bend in the elbows.",
-    motion: "Raise the elbows and hands out to the sides until they reach shoulder height, then lower.",
-    focus: "Lead with the elbows and avoid turning it into a shrug."
+    setup: "Stand tall with dumbbells at the sides, palms facing inward toward the thighs, and a slight, fixed bend in the elbows.",
+    motion: "Lead with the elbows and raise the arms out to the sides until the elbows and hands are near shoulder height, then lower under control.",
+    focus: "Keep the torso still, wrists neutral, and avoid turning the lift into a shrug."
   },
   seatedOverheadPress: {
     pattern: "press",
