@@ -1,6 +1,8 @@
 import * as THREE from "../node_modules/three/build/three.module.js";
 
 const yAxis = new THREE.Vector3(0, 1, 0);
+const xAxis = new THREE.Vector3(1, 0, 0);
+const zAxis = new THREE.Vector3(0, 0, 1);
 const skin = "#d8d1c8";
 const dark = "#26342e";
 const metal = "#6b7470";
@@ -80,6 +82,16 @@ function placeSegment(mesh, start, end, radius = mesh.userData.radius ?? 0.08) {
   mesh.quaternion.setFromUnitVectors(yAxis, direction.normalize());
 }
 
+function normalizedDirection(vector, fallback = zAxis) {
+  const direction = vector?.clone?.() ?? fallback.clone();
+  if (direction.lengthSq() < 0.0001) return fallback.clone();
+  return direction.normalize();
+}
+
+function orientLocalXAxis(object, direction) {
+  object.quaternion.setFromUnitVectors(xAxis, normalizedDirection(direction));
+}
+
 function makePoint(x, y, z = 0) {
   return new THREE.Vector3(x, y, z);
 }
@@ -155,7 +167,11 @@ export class ExerciseAnimationScene {
     const legColor = ["squat", "hinge", "calf", "ankle"].includes(this.pattern) ? active : skin;
     const torsoColor = ["core", "hinge", "neck"].includes(this.pattern) ? active : skin;
 
-    this.parts.torso = addSphere(this.body, [0, 0.65, 0], [0.45, 0.78, 0.26], torsoColor, { opacity: 0.96 });
+    const jointColor = "#1f2c28";
+
+    this.parts.torso = addSphere(this.body, [0, 0.65, 0], [0.45, 0.78, 0.26], torsoColor, { opacity: 0.9 });
+    this.parts.ribcage = addSphere(this.body, [0, 0.78, 0.03], [0.38, 0.42, 0.22], torsoColor, { opacity: 0.42 });
+    this.parts.abdomen = addSphere(this.body, [0, 0.25, 0.02], [0.3, 0.28, 0.18], skin, { opacity: 0.48 });
     this.parts.pelvis = addSphere(this.body, [0, -0.1, 0], [0.42, 0.26, 0.25], skin, { opacity: 0.95 });
     this.parts.head = addSphere(this.body, [0, 1.68, 0], [0.22, 0.25, 0.22], "#f1ccb6");
     this.parts.neck = segmentMesh(torsoColor, 0.09);
@@ -173,8 +189,33 @@ export class ExerciseAnimationScene {
 
     this.parts.leftHand = addSphere(this.body, [-0.65, 0.3, 0], [0.08, 0.08, 0.08], dark);
     this.parts.rightHand = addSphere(this.body, [0.65, 0.3, 0], [0.08, 0.08, 0.08], dark);
+    this.parts.leftPalm = addSphere(this.body, [-0.65, 0.3, 0], [0.11, 0.055, 0.09], "#17231f");
+    this.parts.rightPalm = addSphere(this.body, [0.65, 0.3, 0], [0.11, 0.055, 0.09], "#17231f");
+    this.parts.leftThumb = addSphere(this.body, [-0.65, 0.3, 0], [0.035, 0.035, 0.035], "#0f1916");
+    this.parts.rightThumb = addSphere(this.body, [0.65, 0.3, 0], [0.035, 0.035, 0.035], "#0f1916");
+    this.parts.leftGrip = segmentMesh("#111b17", 0.018);
+    this.parts.rightGrip = segmentMesh("#111b17", 0.018);
+    this.body.add(this.parts.leftGrip);
+    this.body.add(this.parts.rightGrip);
     this.parts.leftFoot = addSphere(this.body, [-0.26, -1.12, 0.1], [0.2, 0.07, 0.32], legColor);
     this.parts.rightFoot = addSphere(this.body, [0.26, -1.12, 0.1], [0.2, 0.07, 0.32], legColor);
+
+    [
+      "leftShoulderJoint",
+      "rightShoulderJoint",
+      "leftElbowJoint",
+      "rightElbowJoint",
+      "leftWristJoint",
+      "rightWristJoint",
+      "leftHipJoint",
+      "rightHipJoint",
+      "leftKneeJoint",
+      "rightKneeJoint",
+      "leftAnkleJoint",
+      "rightAnkleJoint"
+    ].forEach((key) => {
+      this.parts[key] = addSphere(this.body, [0, 0, 0], [0.045, 0.045, 0.045], jointColor, { opacity: 0.88 });
+    });
   }
 
   buildEquipment() {
@@ -362,20 +403,17 @@ export class ExerciseAnimationScene {
 
   createDumbbell(x, y, z) {
     const group = new THREE.Group();
-    addCylinder(group, [0, 0, 0], 0.025, 0.025, 0.34, metal, { rotation: [0, 0, Math.PI / 2] });
-    addCylinder(group, [-0.2, 0, 0], 0.075, 0.075, 0.06, rubber, { rotation: [0, 0, Math.PI / 2] });
-    addCylinder(group, [0.2, 0, 0], 0.075, 0.075, 0.06, rubber, { rotation: [0, 0, Math.PI / 2] });
+    addCylinder(group, [0, 0, 0], 0.027, 0.027, 0.42, metal, { rotation: [0, 0, Math.PI / 2] });
+    addCylinder(group, [-0.25, 0, 0], 0.085, 0.085, 0.075, rubber, { rotation: [0, 0, Math.PI / 2] });
+    addCylinder(group, [0.25, 0, 0], 0.085, 0.085, 0.075, rubber, { rotation: [0, 0, Math.PI / 2] });
     group.position.set(x, y, z);
     this.propGroup.add(group);
     return group;
   }
 
-  basePose(progress) {
-    const p = progress;
-    const bounce = Math.sin(p * Math.PI * 2) * 0.04;
-
+  basePose() {
     return {
-      root: makePoint(0, 0.02 + bounce, 0),
+      root: makePoint(0, 0.02, 0),
       torsoLean: 0,
       shoulderY: 0.95,
       shoulderZ: 0,
@@ -393,7 +431,9 @@ export class ExerciseAnimationScene {
       leftAnkle: makePoint(-0.28, -1.1, 0.04),
       rightAnkle: makePoint(0.28, -1.1, 0.04),
       leftFoot: makePoint(-0.28, -1.14, 0.24),
-      rightFoot: makePoint(0.28, -1.14, 0.24)
+      rightFoot: makePoint(0.28, -1.14, 0.24),
+      leftGripAxis: makePoint(0, 0, 1),
+      rightGripAxis: makePoint(0, 0, 1)
     };
   }
 
@@ -410,6 +450,20 @@ export class ExerciseAnimationScene {
       pose.rightElbow = makePoint(0.48, 0.82 + phase * 0.28, -0.31);
       pose.leftHand = makePoint(-0.64 + phase * 0.2, 1.08 + phase * 0.46, -0.32);
       pose.rightHand = makePoint(0.64 - phase * 0.2, 1.08 + phase * 0.46, -0.32);
+      return pose;
+    }
+
+    if (is("lateralRaise")) {
+      pose.root.y = 0.02;
+      pose.torsoLean = 0;
+      pose.shoulderY = 0.95;
+      pose.hipY = -0.04;
+      pose.leftElbow = makePoint(mix(-0.6, -0.84, phase), mix(0.36, 0.9, phase), mix(0.1, 0.14, phase));
+      pose.rightElbow = makePoint(mix(0.6, 0.84, phase), mix(0.36, 0.9, phase), mix(0.1, 0.14, phase));
+      pose.leftHand = makePoint(mix(-0.68, -1.06, phase), mix(0.02, 0.8, phase), mix(0.2, 0.14, phase));
+      pose.rightHand = makePoint(mix(0.68, 1.06, phase), mix(0.02, 0.8, phase), mix(0.2, 0.14, phase));
+      pose.leftGripAxis = makePoint(0, 0, 1);
+      pose.rightGripAxis = makePoint(0, 0, 1);
       return pose;
     }
 
@@ -1090,9 +1144,17 @@ export class ExerciseAnimationScene {
     const rightAnkle = pose.rightAnkle.clone().add(root);
     const leftFoot = pose.leftFoot.clone().add(root);
     const rightFoot = pose.rightFoot.clone().add(root);
+    const leftWrist = leftElbow.clone().lerp(leftHand, 0.84);
+    const rightWrist = rightElbow.clone().lerp(rightHand, 0.84);
+    const leftGripAxis = normalizedDirection(pose.leftGripAxis);
+    const rightGripAxis = normalizedDirection(pose.rightGripAxis);
 
     this.parts.torso.position.copy(shoulderCenter.clone().lerp(hipCenter, 0.5));
     this.parts.torso.rotation.x = lean;
+    this.parts.ribcage.position.copy(shoulderCenter.clone().lerp(hipCenter, 0.28));
+    this.parts.ribcage.rotation.x = lean;
+    this.parts.abdomen.position.copy(shoulderCenter.clone().lerp(hipCenter, 0.68));
+    this.parts.abdomen.rotation.x = lean;
     this.parts.pelvis.position.copy(hipCenter);
     this.parts.head.position.copy(head);
     this.parts.head.rotation.z = pose.headTilt;
@@ -1109,17 +1171,56 @@ export class ExerciseAnimationScene {
 
     this.parts.leftHand.position.copy(leftHand);
     this.parts.rightHand.position.copy(rightHand);
+    this.parts.leftPalm.position.copy(leftHand);
+    this.parts.rightPalm.position.copy(rightHand);
+    this.parts.leftThumb.position.copy(leftHand.clone().add(leftGripAxis.clone().multiplyScalar(0.12)).add(makePoint(0, 0.025, 0)));
+    this.parts.rightThumb.position.copy(rightHand.clone().add(rightGripAxis.clone().multiplyScalar(-0.12)).add(makePoint(0, 0.025, 0)));
+    placeSegment(
+      this.parts.leftGrip,
+      leftHand.clone().add(leftGripAxis.clone().multiplyScalar(-0.16)),
+      leftHand.clone().add(leftGripAxis.clone().multiplyScalar(0.16)),
+      0.018
+    );
+    placeSegment(
+      this.parts.rightGrip,
+      rightHand.clone().add(rightGripAxis.clone().multiplyScalar(-0.16)),
+      rightHand.clone().add(rightGripAxis.clone().multiplyScalar(0.16)),
+      0.018
+    );
     this.parts.leftFoot.position.copy(leftFoot);
     this.parts.rightFoot.position.copy(rightFoot);
     this.parts.leftFoot.rotation.x = pose.leftFoot.rotationX ?? (this.pattern === "ankle" ? Math.sin(this.clock.elapsedTime * 4) * 0.3 : 0.08);
     this.parts.rightFoot.rotation.x = pose.rightFoot.rotationX ?? (this.pattern === "ankle" ? -Math.sin(this.clock.elapsedTime * 4) * 0.3 : 0.08);
 
-    this.lastPose = { leftHand, rightHand, leftFoot, rightFoot, head, shoulderCenter, hipCenter };
+    this.parts.leftShoulderJoint.position.copy(leftShoulder);
+    this.parts.rightShoulderJoint.position.copy(rightShoulder);
+    this.parts.leftElbowJoint.position.copy(leftElbow);
+    this.parts.rightElbowJoint.position.copy(rightElbow);
+    this.parts.leftWristJoint.position.copy(leftWrist);
+    this.parts.rightWristJoint.position.copy(rightWrist);
+    this.parts.leftHipJoint.position.copy(leftHip);
+    this.parts.rightHipJoint.position.copy(rightHip);
+    this.parts.leftKneeJoint.position.copy(leftKnee);
+    this.parts.rightKneeJoint.position.copy(rightKnee);
+    this.parts.leftAnkleJoint.position.copy(leftAnkle);
+    this.parts.rightAnkleJoint.position.copy(rightAnkle);
+
+    this.lastPose = {
+      leftHand,
+      rightHand,
+      leftFoot,
+      rightFoot,
+      head,
+      shoulderCenter,
+      hipCenter,
+      leftGripAxis,
+      rightGripAxis
+    };
   }
 
   updateEquipment(progress) {
     if (!this.lastPose) return;
-    const { leftHand, rightHand, leftFoot, rightFoot, head, shoulderCenter, hipCenter } = this.lastPose;
+    const { leftHand, rightHand, leftFoot, rightFoot, head, shoulderCenter, hipCenter, leftGripAxis, rightGripAxis } = this.lastPose;
     const variant = this.variant;
     const is = (...variants) => variants.includes(variant);
     const midpoint = leftHand.clone().add(rightHand).multiplyScalar(0.5);
@@ -1129,9 +1230,13 @@ export class ExerciseAnimationScene {
       if (is("gobletSquat")) {
         this.props.leftDumbbell.position.copy(midpoint.clone().add(makePoint(0, -0.08, 0.02)));
         this.props.rightDumbbell.position.copy(midpoint.clone().add(makePoint(0, -0.08, 0.02)));
+        orientLocalXAxis(this.props.leftDumbbell, yAxis);
+        orientLocalXAxis(this.props.rightDumbbell, yAxis);
       } else {
         this.props.leftDumbbell.position.copy(leftHand);
         this.props.rightDumbbell.position.copy(rightHand);
+        orientLocalXAxis(this.props.leftDumbbell, leftGripAxis);
+        orientLocalXAxis(this.props.rightDumbbell, rightGripAxis);
       }
     }
 
@@ -1233,7 +1338,7 @@ export class ExerciseAnimationScene {
     const pose = this.poseFor(progress);
     this.applyPose(pose);
     this.updateEquipment(progress);
-    this.body.rotation.y = -0.12 + Math.sin(elapsed * 0.6) * 0.05;
+    this.body.rotation.y = -0.28;
     this.propGroup.rotation.y = this.body.rotation.y;
     this.renderer.render(this.scene, this.camera);
   }
