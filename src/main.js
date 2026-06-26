@@ -1,6 +1,5 @@
 import "./styles.css";
 import { BodyScene } from "./bodyScene.js";
-import { ExerciseAnimationScene } from "./exerciseAnimationScene.js";
 import {
   LEVELS,
   MUSCLES,
@@ -10,8 +9,6 @@ import {
   getCompatibleSplitIds,
   getEquipmentIdsForMuscles,
   getEquipmentOptions,
-  getExerciseAnimation,
-  getExerciseEquipmentTypes,
   getExercisePool,
   getMuscle
 } from "./data.js";
@@ -23,12 +20,10 @@ const appState = {
   selectedEquipment: [],
   level: "beginner",
   generatedRoutine: [],
-  unmatchedMuscles: [],
-  activeAnimationIndex: null
+  unmatchedMuscles: []
 };
 
 let bodyScene = null;
-let exerciseAnimationScene = null;
 
 const app = document.querySelector("#app");
 
@@ -63,13 +58,6 @@ function selectMuscle(id) {
   updateMuscleButtons();
 }
 
-function destroyExerciseAnimationScene() {
-  if (exerciseAnimationScene) {
-    exerciseAnimationScene.destroy();
-    exerciseAnimationScene = null;
-  }
-}
-
 function getAvailableRoutineEquipmentIds() {
   return getEquipmentIdsForMuscles(appState.selectedRoutineMuscles, appState.level);
 }
@@ -84,9 +72,9 @@ function buildShell() {
   app.innerHTML = `
     <div class="app-shell">
       <header class="topbar">
-        <a class="brand" href="#body" aria-label="Muscle Map Trainer home">
+        <a class="brand" href="#body" aria-label="Wellness Map home">
           <span class="brand-mark"></span>
-          <span>Muscle Map Trainer</span>
+          <span>Wellness Map</span>
         </a>
         <nav class="main-nav" aria-label="Primary">
           <button class="nav-button" data-page="body" type="button">Body Map</button>
@@ -112,7 +100,6 @@ function render() {
     button.classList.toggle("is-active", button.dataset.page === appState.page);
   });
 
-  destroyExerciseAnimationScene();
   if (bodyScene) {
     bodyScene.destroy();
     bodyScene = null;
@@ -189,6 +176,7 @@ function renderBodyDetails() {
       </div>
     </div>
     <p class="muscle-role">${muscle.role}</p>
+    <p class="routine-note">${muscle.exercises.length} exercise options</p>
     <div class="exercise-stack">${exerciseItems}</div>
   `;
 }
@@ -401,7 +389,6 @@ function generateRoutine() {
   if (selected.length === 0) {
     appState.generatedRoutine = [];
     appState.unmatchedMuscles = [];
-    appState.activeAnimationIndex = null;
     renderRoutineResult();
     return;
   }
@@ -419,9 +406,10 @@ function generateRoutine() {
 
     const count = Math.min(level.exerciseCount, pool.length);
     for (let index = 0; index < count; index += 1) {
+      const offset = Math.floor(Math.random() * pool.length);
       routine.push({
         muscleId,
-        exercise: pool[(index + muscleIndex) % pool.length],
+        exercise: pool[(index + muscleIndex + offset) % pool.length],
         sets: level.sets,
         reps: level.reps,
         rest: level.rest
@@ -431,14 +419,12 @@ function generateRoutine() {
 
   appState.generatedRoutine = routine;
   appState.unmatchedMuscles = unmatchedMuscles;
-  appState.activeAnimationIndex = null;
   renderRoutineResult();
 }
 
 function renderRoutineResult() {
   const root = app.querySelector("#routineResult");
   if (!root) return;
-  destroyExerciseAnimationScene();
 
   if (appState.generatedRoutine.length === 0) {
     root.innerHTML = `
@@ -492,10 +478,6 @@ function renderRoutineResult() {
               <div><dt>Reps</dt><dd>${item.reps}</dd></div>
               <div><dt>Rest</dt><dd>${item.rest}</dd></div>
             </dl>
-            <button class="motion-button" type="button" data-animation-index="${index}" aria-label="Show animation for ${escapeHtml(item.exercise.name)}" title="Show animation">
-              <span class="play-icon" aria-hidden="true"></span>
-              <span>Animation</span>
-            </button>
           </li>
         `;
       }).join("")}
@@ -503,88 +485,7 @@ function renderRoutineResult() {
     <p class="safety-note">General fitness information only; adjust for pain, injury history, and professional guidance.</p>
   `;
 
-  root.querySelectorAll(".motion-button").forEach((button) => {
-    button.addEventListener("click", () => openExerciseAnimation(button.dataset.animationIndex));
-  });
-
-  renderExerciseAnimationModal(root);
 }
-
-function openExerciseAnimation(index) {
-  appState.activeAnimationIndex = Number.parseInt(index, 10);
-  renderRoutineResult();
-}
-
-function closeExerciseAnimation() {
-  destroyExerciseAnimationScene();
-  appState.activeAnimationIndex = null;
-  renderRoutineResult();
-}
-
-function renderExerciseAnimationModal(root) {
-  const item = appState.generatedRoutine[appState.activeAnimationIndex];
-  if (!item) return;
-
-  const muscle = getMuscle(item.muscleId);
-  const animation = getExerciseAnimation(item.exercise);
-
-  root.insertAdjacentHTML("beforeend", `
-    <div class="motion-modal-backdrop" data-close-animation>
-      <section class="motion-modal" role="dialog" aria-modal="true" aria-labelledby="motionTitle">
-        <div class="motion-modal-header">
-          <div>
-            <p>${escapeHtml(animation.label)}</p>
-            <h2 id="motionTitle">${escapeHtml(item.exercise.name)}</h2>
-          </div>
-          <button class="icon-button modal-close-button" type="button" data-close-animation aria-label="Close animation">X</button>
-        </div>
-        <div class="motion-stage">
-          <div class="exercise-3d-stage" data-exercise-animation></div>
-        </div>
-        <div class="motion-copy">
-          <div>
-            <h3>Setup</h3>
-            <p>${escapeHtml(animation.setup)}</p>
-          </div>
-          <div>
-            <h3>Motion</h3>
-            <p>${escapeHtml(animation.motion)}</p>
-          </div>
-          <div>
-            <h3>Focus</h3>
-            <p>${escapeHtml(animation.focus)}</p>
-          </div>
-        </div>
-        <p class="motion-cue">${escapeHtml(item.exercise.cue)}</p>
-      </section>
-    </div>
-  `);
-
-  root.querySelectorAll("[data-close-animation]").forEach((element) => {
-    element.addEventListener("click", (event) => {
-      if (event.target === element || element.classList.contains("modal-close-button")) {
-        closeExerciseAnimation();
-      }
-    });
-  });
-
-  const stage = root.querySelector("[data-exercise-animation]");
-  if (stage) {
-    exerciseAnimationScene = new ExerciseAnimationScene(stage, {
-      pattern: animation.pattern,
-      variant: animation.variant,
-      equipment: getExerciseEquipmentTypes(item.exercise.equipment),
-      muscleColor: muscle.color,
-      exerciseName: item.exercise.name
-    });
-  }
-}
-
-window.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && appState.activeAnimationIndex !== null) {
-    closeExerciseAnimation();
-  }
-});
 
 window.addEventListener("hashchange", render);
 render();
