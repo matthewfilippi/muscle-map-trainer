@@ -684,3 +684,366 @@ export function getActiveSplits(selectedMuscles) {
   const compatibleSplitIds = getCompatibleSplitIds(selectedMuscles);
   return SPLITS.filter((split) => compatibleSplitIds.includes(split.id));
 }
+
+export const STRETCH_ROUTINE = [
+  {
+    id: "warmup",
+    phase: "Warm Up",
+    time: "3-5 min",
+    intent: "Raise temperature before longer holds.",
+    stretches: [
+      {
+        name: "Easy Walk or March",
+        area: "Whole body",
+        hold: "2 min",
+        steps: "Move at an easy pace until breathing warms up and joints feel less stiff."
+      },
+      {
+        name: "Arm Circles",
+        area: "Shoulders",
+        hold: "30 sec each direction",
+        steps: "Circle from small to medium ranges while ribs stay stacked over hips."
+      },
+      {
+        name: "Hip Circles",
+        area: "Hips",
+        hold: "30 sec each direction",
+        steps: "Stand tall and draw smooth circles with the hips without forcing the low back."
+      }
+    ]
+  },
+  {
+    id: "neck-shoulders",
+    phase: "Neck, Chest, and Shoulders",
+    time: "5-6 min",
+    intent: "Undo desk posture and improve overhead comfort.",
+    stretches: [
+      {
+        name: "Chin Tuck",
+        area: "Neck",
+        hold: "6 slow reps",
+        steps: "Glide the chin straight back, pause briefly, then return to neutral."
+      },
+      {
+        name: "Upper Trap Stretch",
+        area: "Neck",
+        hold: "30 sec each side",
+        steps: "Let one ear move toward the same shoulder while the opposite shoulder stays heavy."
+      },
+      {
+        name: "Doorway Pec Stretch",
+        area: "Chest",
+        hold: "30 sec each side",
+        steps: "Place forearm on a doorway and turn the chest away until the front shoulder opens."
+      },
+      {
+        name: "Cross-Body Shoulder Stretch",
+        area: "Rear shoulder",
+        hold: "30 sec each side",
+        steps: "Draw one arm across the body without shrugging the shoulder toward the ear."
+      },
+      {
+        name: "Lat Wall Reach",
+        area: "Lats",
+        hold: "30 sec each side",
+        steps: "Hinge back with hands on a wall or counter and breathe into the side ribs."
+      }
+    ]
+  },
+  {
+    id: "spine-core",
+    phase: "Spine and Core",
+    time: "4-5 min",
+    intent: "Move the spine gently before deeper hip and leg work.",
+    stretches: [
+      {
+        name: "Cat-Cow",
+        area: "Spine",
+        hold: "8 slow reps",
+        steps: "Round and arch the spine smoothly while moving with the breath."
+      },
+      {
+        name: "Child's Pose Reach",
+        area: "Back and shoulders",
+        hold: "45 sec",
+        steps: "Sit hips back, reach arms forward, and let the rib cage soften toward the floor."
+      },
+      {
+        name: "Thread the Needle",
+        area: "Upper back",
+        hold: "30 sec each side",
+        steps: "Slide one arm under the body and rotate through the upper back."
+      },
+      {
+        name: "Open Book Rotation",
+        area: "Thoracic spine",
+        hold: "6 reps each side",
+        steps: "Lie on one side and rotate the top arm open while knees stay stacked."
+      }
+    ]
+  },
+  {
+    id: "hips",
+    phase: "Hips and Glutes",
+    time: "5-6 min",
+    intent: "Restore hip rotation and extension for walking, lifting, and sitting recovery.",
+    stretches: [
+      {
+        name: "Half-Kneeling Hip Flexor Stretch",
+        area: "Hip flexors",
+        hold: "30 sec each side",
+        steps: "Tuck the pelvis slightly and shift forward until the front of the hip opens."
+      },
+      {
+        name: "Figure Four Stretch",
+        area: "Glutes",
+        hold: "30 sec each side",
+        steps: "Cross ankle over opposite thigh and draw the legs toward the chest."
+      },
+      {
+        name: "90/90 Hip Switch",
+        area: "Hip rotation",
+        hold: "8 slow reps",
+        steps: "Move between seated 90/90 positions without rushing or forcing the knees."
+      },
+      {
+        name: "Adductor Rock Back",
+        area: "Inner thighs",
+        hold: "8 reps each side",
+        steps: "Extend one leg to the side from hands and knees, then rock hips back gently."
+      }
+    ]
+  },
+  {
+    id: "legs",
+    phase: "Legs",
+    time: "6-8 min",
+    intent: "Cover the big lower-body muscle groups that tighten from training or sitting.",
+    stretches: [
+      {
+        name: "Standing Quad Stretch",
+        area: "Quads",
+        hold: "30 sec each side",
+        steps: "Pull heel toward glute, keep knees close, and avoid arching the low back."
+      },
+      {
+        name: "Hamstring Strap Stretch",
+        area: "Hamstrings",
+        hold: "30 sec each side",
+        steps: "Lie down, raise one leg with a strap or towel, and keep the knee softly bent."
+      },
+      {
+        name: "Runner's Calf Stretch",
+        area: "Calves",
+        hold: "30 sec each side",
+        steps: "Press the back heel down with the rear knee straight."
+      },
+      {
+        name: "Bent-Knee Soleus Stretch",
+        area: "Lower calves",
+        hold: "30 sec each side",
+        steps: "Bend the back knee while keeping the heel down to target the deeper calf."
+      },
+      {
+        name: "Deep Squat Hold",
+        area: "Hips and ankles",
+        hold: "30-60 sec",
+        steps: "Sit into a comfortable squat, keep heels supported if needed, and breathe."
+      }
+    ]
+  },
+  {
+    id: "feet",
+    phase: "Feet and Ankles",
+    time: "3-4 min",
+    intent: "Keep the base of the body mobile and responsive.",
+    stretches: [
+      {
+        name: "Knee-to-Wall Ankle Mobilization",
+        area: "Ankles",
+        hold: "8 reps each side",
+        steps: "Drive the knee toward the wall while the heel stays planted."
+      },
+      {
+        name: "Toe Extension Stretch",
+        area: "Feet",
+        hold: "30 sec each side",
+        steps: "Tuck toes under gently and sit back only as far as comfortable."
+      },
+      {
+        name: "Plantar Fascia Roll",
+        area: "Foot arch",
+        hold: "45 sec each side",
+        steps: "Roll the arch over a ball or bottle using light to moderate pressure."
+      }
+    ]
+  }
+];
+
+export const FOOD_GROUPS = [
+  {
+    id: "protein",
+    label: "Protein",
+    theme: "#e25555",
+    description: "Meat, seafood, eggs, soy, and other protein-rich foods for repair and satiety."
+  },
+  {
+    id: "vegetables",
+    label: "Vegetables",
+    theme: "#56a05a",
+    description: "Colorful, fiber-rich plants that bring minerals, vitamins, and volume."
+  },
+  {
+    id: "fruits",
+    label: "Fruits",
+    theme: "#f28d35",
+    description: "Naturally sweet carbohydrate sources with fluid, fiber, and antioxidants."
+  },
+  {
+    id: "grains",
+    label: "Whole Grains and Starches",
+    theme: "#d49b2a",
+    description: "Fiber-rich carbohydrates that pair well with protein around training."
+  },
+  {
+    id: "dairy",
+    label: "Dairy and Fortified Alternatives",
+    theme: "#3578bf",
+    description: "Calcium, protein, and vitamin D options, including fortified non-dairy choices."
+  },
+  {
+    id: "fats",
+    label: "Healthy Fats",
+    theme: "#8f7bdc",
+    description: "Nuts, seeds, oils, and whole-food fats that help meals stay satisfying."
+  },
+  {
+    id: "hydration",
+    label: "Hydration",
+    theme: "#2f9b85",
+    description: "Water and low-sugar fluids that support daily training and recovery."
+  }
+];
+
+export const FOODS = [
+  { id: "chicken-breast", name: "Chicken Breast", group: "protein", serving: "3 oz cooked", calories: 165, protein: 31, carbs: 0, fat: 4, fiber: 0, nutrients: ["niacin", "selenium", "phosphorus"], tags: ["lean-protein", "recovery"] },
+  { id: "turkey", name: "Turkey Breast", group: "protein", serving: "3 oz cooked", calories: 125, protein: 26, carbs: 0, fat: 2, fiber: 0, nutrients: ["B vitamins", "selenium", "zinc"], tags: ["lean-protein", "recovery"] },
+  { id: "salmon", name: "Salmon", group: "protein", serving: "3 oz cooked", calories: 175, protein: 19, carbs: 0, fat: 11, fiber: 0, nutrients: ["omega-3 fats", "vitamin D", "B12"], tags: ["protein", "healthy-fat", "recovery"] },
+  { id: "tuna", name: "Tuna", group: "protein", serving: "3 oz canned in water", calories: 110, protein: 24, carbs: 0, fat: 1, fiber: 0, nutrients: ["B12", "selenium", "iodine"], tags: ["lean-protein", "recovery"] },
+  { id: "sardines", name: "Sardines", group: "protein", serving: "3 oz canned", calories: 190, protein: 21, carbs: 0, fat: 11, fiber: 0, nutrients: ["omega-3 fats", "calcium", "vitamin D"], tags: ["protein", "healthy-fat"] },
+  { id: "shrimp", name: "Shrimp", group: "protein", serving: "3 oz cooked", calories: 85, protein: 20, carbs: 1, fat: 1, fiber: 0, nutrients: ["iodine", "selenium", "B12"], tags: ["lean-protein"] },
+  { id: "eggs", name: "Eggs", group: "protein", serving: "2 large", calories: 140, protein: 13, carbs: 1, fat: 10, fiber: 0, nutrients: ["choline", "vitamin D", "B12"], tags: ["protein", "healthy-fat"] },
+  { id: "lean-beef", name: "Lean Beef", group: "protein", serving: "3 oz cooked", calories: 180, protein: 25, carbs: 0, fat: 8, fiber: 0, nutrients: ["iron", "zinc", "B12"], tags: ["protein", "iron"] },
+  { id: "pork-tenderloin", name: "Pork Tenderloin", group: "protein", serving: "3 oz cooked", calories: 125, protein: 22, carbs: 0, fat: 3, fiber: 0, nutrients: ["thiamin", "selenium", "B6"], tags: ["lean-protein"] },
+  { id: "tofu", name: "Tofu", group: "protein", serving: "1/2 cup", calories: 180, protein: 20, carbs: 4, fat: 11, fiber: 2, nutrients: ["calcium", "iron", "magnesium"], tags: ["plant-protein", "iron"] },
+  { id: "tempeh", name: "Tempeh", group: "protein", serving: "3 oz", calories: 160, protein: 16, carbs: 9, fat: 9, fiber: 5, nutrients: ["manganese", "iron", "magnesium"], tags: ["plant-protein", "fiber"] },
+  { id: "edamame", name: "Edamame", group: "protein", serving: "1 cup shelled", calories: 190, protein: 18, carbs: 14, fat: 8, fiber: 8, nutrients: ["folate", "iron", "magnesium"], tags: ["plant-protein", "fiber"] },
+  { id: "lentils", name: "Lentils", group: "protein", serving: "1 cup cooked", calories: 230, protein: 18, carbs: 40, fat: 1, fiber: 16, nutrients: ["folate", "iron", "potassium"], tags: ["plant-protein", "plant-iron", "fiber"] },
+  { id: "black-beans", name: "Black Beans", group: "protein", serving: "1 cup cooked", calories: 225, protein: 15, carbs: 41, fat: 1, fiber: 15, nutrients: ["folate", "magnesium", "iron"], tags: ["plant-protein", "fiber", "carb"] },
+  { id: "chickpeas", name: "Chickpeas", group: "protein", serving: "1 cup cooked", calories: 270, protein: 15, carbs: 45, fat: 4, fiber: 13, nutrients: ["folate", "manganese", "iron"], tags: ["plant-protein", "fiber"] },
+
+  { id: "spinach", name: "Spinach", group: "vegetables", serving: "2 cups raw", calories: 15, protein: 2, carbs: 2, fat: 0, fiber: 1, nutrients: ["vitamin K", "folate", "magnesium"], tags: ["plant-iron", "leafy-green"] },
+  { id: "kale", name: "Kale", group: "vegetables", serving: "1 cup raw", calories: 35, protein: 2, carbs: 7, fat: 1, fiber: 1, nutrients: ["vitamin K", "vitamin C", "beta carotene"], tags: ["leafy-green", "vitamin-c"] },
+  { id: "broccoli", name: "Broccoli", group: "vegetables", serving: "1 cup cooked", calories: 55, protein: 4, carbs: 11, fat: 1, fiber: 5, nutrients: ["vitamin C", "vitamin K", "folate"], tags: ["vitamin-c", "fiber"] },
+  { id: "bell-pepper", name: "Bell Pepper", group: "vegetables", serving: "1 medium", calories: 30, protein: 1, carbs: 7, fat: 0, fiber: 2, nutrients: ["vitamin C", "vitamin A", "potassium"], tags: ["vitamin-c", "color"] },
+  { id: "carrots", name: "Carrots", group: "vegetables", serving: "1 cup", calories: 50, protein: 1, carbs: 12, fat: 0, fiber: 4, nutrients: ["beta carotene", "vitamin K", "potassium"], tags: ["color", "fiber"] },
+  { id: "tomatoes", name: "Tomatoes", group: "vegetables", serving: "1 cup", calories: 30, protein: 1, carbs: 7, fat: 0, fiber: 2, nutrients: ["lycopene", "vitamin C", "potassium"], tags: ["vitamin-c", "color"] },
+  { id: "asparagus", name: "Asparagus", group: "vegetables", serving: "1 cup cooked", calories: 40, protein: 4, carbs: 7, fat: 0, fiber: 4, nutrients: ["folate", "vitamin K", "prebiotic fiber"], tags: ["fiber", "prebiotic"] },
+  { id: "brussels-sprouts", name: "Brussels Sprouts", group: "vegetables", serving: "1 cup cooked", calories: 55, protein: 4, carbs: 11, fat: 1, fiber: 4, nutrients: ["vitamin C", "vitamin K", "folate"], tags: ["vitamin-c", "fiber"] },
+  { id: "cauliflower", name: "Cauliflower", group: "vegetables", serving: "1 cup cooked", calories: 30, protein: 2, carbs: 5, fat: 0, fiber: 3, nutrients: ["vitamin C", "choline", "folate"], tags: ["vitamin-c", "fiber"] },
+  { id: "mushrooms", name: "Mushrooms", group: "vegetables", serving: "1 cup cooked", calories: 45, protein: 3, carbs: 8, fat: 0, fiber: 3, nutrients: ["selenium", "B vitamins", "copper"], tags: ["umami", "fiber"] },
+  { id: "onions", name: "Onions", group: "vegetables", serving: "1 cup cooked", calories: 90, protein: 2, carbs: 21, fat: 0, fiber: 3, nutrients: ["quercetin", "vitamin C", "prebiotic fiber"], tags: ["prebiotic", "color"] },
+  { id: "bok-choy", name: "Bok Choy", group: "vegetables", serving: "1 cup cooked", calories: 20, protein: 2, carbs: 3, fat: 0, fiber: 1, nutrients: ["calcium", "vitamin K", "vitamin C"], tags: ["vitamin-c", "leafy-green"] },
+  { id: "green-beans", name: "Green Beans", group: "vegetables", serving: "1 cup cooked", calories: 45, protein: 2, carbs: 10, fat: 0, fiber: 4, nutrients: ["vitamin K", "vitamin C", "manganese"], tags: ["fiber"] },
+  { id: "cucumber", name: "Cucumber", group: "vegetables", serving: "1 cup", calories: 15, protein: 1, carbs: 4, fat: 0, fiber: 1, nutrients: ["water", "vitamin K", "potassium"], tags: ["hydrating"] },
+  { id: "beets", name: "Beets", group: "vegetables", serving: "1 cup cooked", calories: 75, protein: 3, carbs: 17, fat: 0, fiber: 3, nutrients: ["nitrates", "folate", "manganese"], tags: ["carb", "color"] },
+
+  { id: "blueberries", name: "Blueberries", group: "fruits", serving: "1 cup", calories: 85, protein: 1, carbs: 21, fat: 0, fiber: 4, nutrients: ["anthocyanins", "vitamin C", "manganese"], tags: ["carb", "color"] },
+  { id: "strawberries", name: "Strawberries", group: "fruits", serving: "1 cup", calories: 50, protein: 1, carbs: 12, fat: 0, fiber: 3, nutrients: ["vitamin C", "manganese", "polyphenols"], tags: ["vitamin-c", "color"] },
+  { id: "banana", name: "Banana", group: "fruits", serving: "1 medium", calories: 105, protein: 1, carbs: 27, fat: 0, fiber: 3, nutrients: ["potassium", "vitamin B6", "carbohydrate"], tags: ["carb", "pre-workout"] },
+  { id: "apple", name: "Apple", group: "fruits", serving: "1 medium", calories: 95, protein: 0, carbs: 25, fat: 0, fiber: 4, nutrients: ["pectin fiber", "vitamin C", "polyphenols"], tags: ["fiber", "carb"] },
+  { id: "orange", name: "Orange", group: "fruits", serving: "1 medium", calories: 60, protein: 1, carbs: 15, fat: 0, fiber: 3, nutrients: ["vitamin C", "potassium", "folate"], tags: ["vitamin-c", "carb"] },
+  { id: "grapes", name: "Grapes", group: "fruits", serving: "1 cup", calories: 105, protein: 1, carbs: 27, fat: 0, fiber: 1, nutrients: ["polyphenols", "vitamin K", "water"], tags: ["carb", "hydrating"] },
+  { id: "pineapple", name: "Pineapple", group: "fruits", serving: "1 cup", calories: 80, protein: 1, carbs: 22, fat: 0, fiber: 2, nutrients: ["vitamin C", "manganese", "bromelain"], tags: ["vitamin-c", "carb"] },
+  { id: "mango", name: "Mango", group: "fruits", serving: "1 cup", calories: 100, protein: 1, carbs: 25, fat: 1, fiber: 3, nutrients: ["vitamin C", "vitamin A", "folate"], tags: ["vitamin-c", "carb"] },
+  { id: "kiwi", name: "Kiwi", group: "fruits", serving: "2 fruit", calories: 90, protein: 2, carbs: 22, fat: 1, fiber: 4, nutrients: ["vitamin C", "vitamin K", "potassium"], tags: ["vitamin-c", "fiber"] },
+  { id: "avocado-fruit", name: "Avocado", group: "fruits", serving: "1/2 medium", calories: 120, protein: 1, carbs: 6, fat: 11, fiber: 5, nutrients: ["monounsaturated fat", "potassium", "folate"], tags: ["healthy-fat", "fiber"] },
+  { id: "watermelon", name: "Watermelon", group: "fruits", serving: "2 cups", calories: 90, protein: 2, carbs: 23, fat: 0, fiber: 1, nutrients: ["water", "lycopene", "vitamin C"], tags: ["hydrating", "carb"] },
+  { id: "cherries", name: "Cherries", group: "fruits", serving: "1 cup", calories: 95, protein: 2, carbs: 25, fat: 0, fiber: 3, nutrients: ["anthocyanins", "potassium", "vitamin C"], tags: ["color", "carb"] },
+
+  { id: "oats", name: "Oats", group: "grains", serving: "1 cup cooked", calories: 155, protein: 6, carbs: 27, fat: 3, fiber: 4, nutrients: ["beta-glucan fiber", "manganese", "magnesium"], tags: ["whole-grain", "carb", "fiber"] },
+  { id: "brown-rice", name: "Brown Rice", group: "grains", serving: "1 cup cooked", calories: 215, protein: 5, carbs: 45, fat: 2, fiber: 4, nutrients: ["manganese", "magnesium", "selenium"], tags: ["whole-grain", "carb"] },
+  { id: "quinoa", name: "Quinoa", group: "grains", serving: "1 cup cooked", calories: 220, protein: 8, carbs: 39, fat: 4, fiber: 5, nutrients: ["magnesium", "manganese", "folate"], tags: ["whole-grain", "carb", "plant-protein"] },
+  { id: "whole-wheat-bread", name: "Whole-Wheat Bread", group: "grains", serving: "2 slices", calories: 160, protein: 8, carbs: 28, fat: 2, fiber: 4, nutrients: ["fiber", "B vitamins", "iron"], tags: ["whole-grain", "carb"] },
+  { id: "whole-grain-pita", name: "Whole-Grain Pita", group: "grains", serving: "1 medium", calories: 170, protein: 6, carbs: 35, fat: 2, fiber: 5, nutrients: ["fiber", "B vitamins", "iron"], tags: ["whole-grain", "carb"] },
+  { id: "sweet-potato", name: "Sweet Potato", group: "grains", serving: "1 medium", calories: 115, protein: 2, carbs: 27, fat: 0, fiber: 4, nutrients: ["beta carotene", "potassium", "vitamin C"], tags: ["carb", "fiber", "color"] },
+  { id: "potatoes", name: "Potatoes", group: "grains", serving: "1 medium", calories: 160, protein: 4, carbs: 37, fat: 0, fiber: 4, nutrients: ["potassium", "vitamin C", "B6"], tags: ["carb", "potassium"] },
+  { id: "barley", name: "Barley", group: "grains", serving: "1 cup cooked", calories: 195, protein: 4, carbs: 44, fat: 1, fiber: 6, nutrients: ["beta-glucan fiber", "selenium", "manganese"], tags: ["whole-grain", "fiber"] },
+  { id: "farro", name: "Farro", group: "grains", serving: "1 cup cooked", calories: 200, protein: 8, carbs: 40, fat: 2, fiber: 5, nutrients: ["magnesium", "zinc", "B vitamins"], tags: ["whole-grain", "carb"] },
+  { id: "corn-tortilla", name: "Corn Tortillas", group: "grains", serving: "2 small", calories: 120, protein: 3, carbs: 24, fat: 2, fiber: 3, nutrients: ["magnesium", "fiber", "calcium"], tags: ["carb"] },
+  { id: "whole-grain-pasta", name: "Whole-Grain Pasta", group: "grains", serving: "1 cup cooked", calories: 175, protein: 7, carbs: 37, fat: 1, fiber: 6, nutrients: ["fiber", "manganese", "B vitamins"], tags: ["whole-grain", "carb"] },
+  { id: "buckwheat", name: "Buckwheat", group: "grains", serving: "1 cup cooked", calories: 155, protein: 6, carbs: 34, fat: 1, fiber: 5, nutrients: ["magnesium", "manganese", "rutin"], tags: ["whole-grain", "carb"] },
+
+  { id: "greek-yogurt", name: "Greek Yogurt", group: "dairy", serving: "3/4 cup plain", calories: 130, protein: 18, carbs: 7, fat: 3, fiber: 0, nutrients: ["calcium", "B12", "probiotics"], tags: ["protein", "calcium", "recovery"] },
+  { id: "cottage-cheese", name: "Cottage Cheese", group: "dairy", serving: "1/2 cup", calories: 110, protein: 14, carbs: 5, fat: 4, fiber: 0, nutrients: ["casein protein", "calcium", "selenium"], tags: ["protein", "calcium"] },
+  { id: "milk", name: "Milk", group: "dairy", serving: "1 cup", calories: 120, protein: 8, carbs: 12, fat: 5, fiber: 0, nutrients: ["calcium", "vitamin D", "B12"], tags: ["protein", "calcium"] },
+  { id: "kefir", name: "Kefir", group: "dairy", serving: "1 cup plain", calories: 110, protein: 9, carbs: 12, fat: 2, fiber: 0, nutrients: ["probiotics", "calcium", "B12"], tags: ["calcium", "probiotic"] },
+  { id: "cheddar", name: "Cheddar Cheese", group: "dairy", serving: "1 oz", calories: 115, protein: 7, carbs: 1, fat: 9, fiber: 0, nutrients: ["calcium", "phosphorus", "vitamin A"], tags: ["calcium", "fat"] },
+  { id: "mozzarella", name: "Mozzarella", group: "dairy", serving: "1 oz", calories: 85, protein: 6, carbs: 1, fat: 6, fiber: 0, nutrients: ["calcium", "phosphorus", "B12"], tags: ["calcium", "protein"] },
+  { id: "soy-milk", name: "Fortified Soy Milk", group: "dairy", serving: "1 cup", calories: 100, protein: 7, carbs: 8, fat: 4, fiber: 2, nutrients: ["calcium", "vitamin D", "B12"], tags: ["plant-protein", "calcium"] },
+  { id: "almond-milk", name: "Fortified Almond Milk", group: "dairy", serving: "1 cup", calories: 40, protein: 1, carbs: 2, fat: 3, fiber: 1, nutrients: ["calcium", "vitamin D", "vitamin E"], tags: ["calcium"] },
+
+  { id: "olive-oil", name: "Olive Oil", group: "fats", serving: "1 tbsp", calories: 120, protein: 0, carbs: 0, fat: 14, fiber: 0, nutrients: ["monounsaturated fat", "polyphenols", "vitamin E"], tags: ["healthy-fat", "fat-soluble"] },
+  { id: "almonds", name: "Almonds", group: "fats", serving: "1 oz", calories: 165, protein: 6, carbs: 6, fat: 14, fiber: 4, nutrients: ["vitamin E", "magnesium", "monounsaturated fat"], tags: ["healthy-fat", "fiber"] },
+  { id: "walnuts", name: "Walnuts", group: "fats", serving: "1 oz", calories: 185, protein: 4, carbs: 4, fat: 18, fiber: 2, nutrients: ["ALA omega-3", "magnesium", "polyphenols"], tags: ["healthy-fat"] },
+  { id: "peanut-butter", name: "Peanut Butter", group: "fats", serving: "2 tbsp", calories: 190, protein: 8, carbs: 7, fat: 16, fiber: 2, nutrients: ["niacin", "magnesium", "healthy fats"], tags: ["healthy-fat", "protein"] },
+  { id: "chia-seeds", name: "Chia Seeds", group: "fats", serving: "2 tbsp", calories: 140, protein: 5, carbs: 12, fat: 9, fiber: 10, nutrients: ["ALA omega-3", "fiber", "magnesium"], tags: ["healthy-fat", "fiber"] },
+  { id: "flaxseed", name: "Ground Flaxseed", group: "fats", serving: "2 tbsp", calories: 75, protein: 3, carbs: 4, fat: 6, fiber: 4, nutrients: ["ALA omega-3", "lignans", "fiber"], tags: ["healthy-fat", "fiber"] },
+  { id: "pumpkin-seeds", name: "Pumpkin Seeds", group: "fats", serving: "1 oz", calories: 160, protein: 8, carbs: 5, fat: 14, fiber: 2, nutrients: ["magnesium", "zinc", "iron"], tags: ["healthy-fat", "plant-iron"] },
+  { id: "tahini", name: "Tahini", group: "fats", serving: "1 tbsp", calories: 90, protein: 3, carbs: 3, fat: 8, fiber: 1, nutrients: ["calcium", "copper", "sesame lignans"], tags: ["healthy-fat"] },
+  { id: "olives", name: "Olives", group: "fats", serving: "1/4 cup", calories: 40, protein: 0, carbs: 2, fat: 4, fiber: 1, nutrients: ["monounsaturated fat", "vitamin E", "polyphenols"], tags: ["healthy-fat"] },
+
+  { id: "water", name: "Water", group: "hydration", serving: "12 oz", calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, nutrients: ["hydration"], tags: ["hydrating"] },
+  { id: "sparkling-water", name: "Sparkling Water", group: "hydration", serving: "12 oz", calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, nutrients: ["hydration"], tags: ["hydrating"] },
+  { id: "unsweet-tea", name: "Unsweetened Tea", group: "hydration", serving: "12 oz", calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, nutrients: ["polyphenols", "fluid"], tags: ["hydrating"] },
+  { id: "coffee", name: "Coffee", group: "hydration", serving: "8 oz black", calories: 5, protein: 0, carbs: 0, fat: 0, fiber: 0, nutrients: ["caffeine", "polyphenols", "fluid"], tags: ["hydrating"] },
+  { id: "coconut-water", name: "Coconut Water", group: "hydration", serving: "1 cup", calories: 45, protein: 0, carbs: 11, fat: 0, fiber: 0, nutrients: ["potassium", "fluid", "carbohydrate"], tags: ["hydrating", "carb"] }
+];
+
+export const FOOD_PAIRINGS = [
+  { id: "oats-yogurt-berries", name: "Oats + Greek Yogurt + Blueberries", foods: ["oats", "greek-yogurt", "blueberries"], reason: "Whole-grain carbs, protein, and fiber make a strong breakfast or post-training bowl." },
+  { id: "salmon-potato-asparagus", name: "Salmon + Sweet Potato + Asparagus", foods: ["salmon", "sweet-potato", "asparagus"], reason: "Protein and omega-3 fats pair with training carbs and fiber-rich vegetables." },
+  { id: "lentils-pepper", name: "Lentils + Bell Pepper", foods: ["lentils", "bell-pepper"], reason: "Vitamin C-rich peppers help round out a plant-iron, high-fiber meal." },
+  { id: "spinach-strawberries-walnuts", name: "Spinach + Strawberries + Walnuts", foods: ["spinach", "strawberries", "walnuts"], reason: "Vitamin C, leafy greens, and fats create a nutrient-dense salad pairing." },
+  { id: "chicken-quinoa-broccoli", name: "Chicken + Quinoa + Broccoli", foods: ["chicken-breast", "quinoa", "broccoli"], reason: "Lean protein, complex carbs, and vegetables cover recovery basics." },
+  { id: "rice-beans-avocado", name: "Brown Rice + Black Beans + Avocado", foods: ["brown-rice", "black-beans", "avocado-fruit"], reason: "Grain plus beans improves the meal's amino acid spread; avocado adds satisfying fats." },
+  { id: "eggs-toast-tomatoes", name: "Eggs + Whole-Wheat Toast + Tomatoes", foods: ["eggs", "whole-wheat-bread", "tomatoes"], reason: "Protein, whole-grain carbs, and vitamin C-rich produce work well together." },
+  { id: "cottage-pineapple", name: "Cottage Cheese + Pineapple", foods: ["cottage-cheese", "pineapple"], reason: "Slow-digesting dairy protein pairs with fruit carbohydrate for a simple snack." },
+  { id: "tofu-rice-bok-choy", name: "Tofu + Brown Rice + Bok Choy", foods: ["tofu", "brown-rice", "bok-choy"], reason: "Plant protein, whole-grain carbs, and calcium-rich greens make a balanced plate." },
+  { id: "banana-peanut-butter", name: "Banana + Peanut Butter", foods: ["banana", "peanut-butter"], reason: "Quick carbohydrate plus fat and protein works as a small pre-workout snack." },
+  { id: "hummus-pita-carrots", name: "Chickpeas + Whole-Grain Pita + Carrots", foods: ["chickpeas", "whole-grain-pita", "carrots"], reason: "Beans, grains, and colorful vegetables give fiber and steady energy." },
+  { id: "yogurt-almonds-kiwi", name: "Greek Yogurt + Almonds + Kiwi", foods: ["greek-yogurt", "almonds", "kiwi"], reason: "Protein, healthy fats, and vitamin C make a compact recovery snack." },
+  { id: "beef-potato-brussels", name: "Lean Beef + Potatoes + Brussels Sprouts", foods: ["lean-beef", "potatoes", "brussels-sprouts"], reason: "Iron-rich protein pairs with potassium-rich carbs and vitamin C vegetables." },
+  { id: "sardines-crackers-cucumber", name: "Sardines + Whole-Grain Pita + Cucumber", foods: ["sardines", "whole-grain-pita", "cucumber"], reason: "Omega-3 protein, whole-grain carbohydrate, and hydrating crunch pair cleanly." },
+  { id: "edamame-orange-rice", name: "Edamame + Orange + Brown Rice", foods: ["edamame", "orange", "brown-rice"], reason: "Plant protein and carbohydrate pair with vitamin C for a portable meal." }
+];
+
+export const WORK_ACTIVITY_LEVELS = [
+  { id: "desk", label: "Desk / mostly seated", met: 1.5 },
+  { id: "standing", label: "Standing / light errands", met: 2.3 },
+  { id: "walking", label: "Walking / active shift", met: 3 },
+  { id: "labor", label: "Manual labor", met: 4.5 },
+  { id: "heavy", label: "Heavy labor", met: 6 }
+];
+
+export const EXERCISE_ACTIVITY_LEVELS = [
+  { id: "mobility", label: "Stretching / mobility", met: 2.3 },
+  { id: "walking", label: "Brisk walk", met: 3.5 },
+  { id: "strength", label: "Strength training", met: 5 },
+  { id: "cardio", label: "Moderate cardio", met: 7 },
+  { id: "hiit", label: "Running / HIIT", met: 10 }
+];
+
+export function getFood(id) {
+  return FOODS.find((food) => food.id === id);
+}
