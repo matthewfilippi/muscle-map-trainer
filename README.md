@@ -1,21 +1,30 @@
-# KaraokeQuest: FL
+# Muscle Map Trainer
 
-A static treasure-map karaoke locator for Florida.
+An interactive fitness app with a selectable 3D human body map and a workout routine generator.
 
-## Upload to GitHub
+## Features
 
-1. Create a GitHub repository named `KaraokeQuest`.
-2. Upload everything in this folder to the repository root:
-   - `index.html`
-   - `styles.css`
-   - `app.js`
-   - `login-treasure-map.png`
-3. To publish it, open the repo's **Settings > Pages** and deploy from the `main` branch root.
+- 3D muscle map built with Three.js
+- Click or tap major muscle groups to see exercise suggestions
+- Neck training included for posture and upper-body support
+- Feet and ankle training included in lower-body routines
+- Beginner, intermediate, and expert workout levels
+- Routine generator that only allows compatible muscle-group combinations
+- Responsive layout for desktop and mobile browsers
 
-## Notes
+## Run Locally
 
-- The login is `Flippers808` and the password is `Weemen`.
-- Pins and ledger entries are saved in the visitor's browser using `localStorage`.
-- The Alcohol page lists only pins marked as alcohol-confirmed with a low and high price range, sorted from less expensive to more expensive.
-- The map uses live OpenStreetMap tiles through Leaflet and is limited to Florida.
-- The site will use `JackSkull.woff2` if you add a licensed copy of the Jack Skull font to the repository root. Until then, it uses pirate-style fallback fonts.
+```bash
+npm install
+npm run dev
+```
+
+Open the local URL Vite prints in the terminal.
+
+## Build
+
+```bash
+npm run build
+```
+
+The production files are generated in `dist/`.
