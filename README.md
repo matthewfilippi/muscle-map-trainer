@@ -1,6 +1,6 @@
 # Wellness Map
 
-An interactive wellness and fitness app with a selectable 3D body map, expanded exercise catalog, and workout routine generator.
+An interactive wellness and fitness app with a selectable 3D body map, expanded exercise catalog, workout routine generator, stretching guide, and nutrition planner.
 
 ## Features
 
@@ -12,6 +12,9 @@ An interactive wellness and fitness app with a selectable 3D body map, expanded 
 - Beginner, intermediate, and expert workout levels
 - Routine generator that only allows compatible muscle-group combinations
 - Equipment filters for routine generation
+- Daily full-body stretching outline with checkable routine steps
+- Food page with broad food groups, nutrients, pairings, and selected plate totals
+- Activity-based calorie comparison for work and exercise output
 - Responsive layout for desktop and mobile browsers
 
 ## Run Locally
