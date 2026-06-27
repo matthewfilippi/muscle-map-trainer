@@ -695,6 +695,34 @@ function getActivityEstimate() {
   };
 }
 
+function foodCardMarkup(food, selected = false) {
+  const group = getFoodGroup(food.group);
+  return `
+    <article class="food-card ${selected ? "is-on-plate" : ""}">
+      <div class="food-card-head">
+        <span class="food-dot" style="--food-color: ${group.theme}"></span>
+        <div>
+          <p>${group.label}</p>
+          <h3>${food.name}</h3>
+        </div>
+      </div>
+      <p class="serving-line">${food.serving}</p>
+      <div class="macro-row">
+        <span>${food.calories} cal</span>
+        <span>${food.protein}g protein</span>
+        <span>${food.carbs}g carbs</span>
+        <span>${food.fat}g fat</span>
+      </div>
+      <div class="nutrient-tags">
+        ${food.nutrients.map((nutrient) => `<span>${nutrient}</span>`).join("")}
+      </div>
+      <button class="secondary-button" type="button" data-food="${food.id}">
+        ${selected ? "Remove from plate" : "Add to plate"}
+      </button>
+    </article>
+  `;
+}
+
 function renderFoodPage() {
   const pageRoot = app.querySelector("#pageRoot");
   const filteredFoods = getFilteredFoods();
@@ -702,6 +730,10 @@ function renderFoodPage() {
   const totals = getFoodTotals();
   const estimate = getActivityEstimate();
   const selectedIds = selectedFoods.map((food) => food.id);
+  const availableFoods = filteredFoods.filter((food) => !selectedIds.includes(food.id));
+  const coveredNutrientIds = new Set(NUTRIENTS
+    .filter((nutrient) => selectedFoods.some((food) => nutrient.foodIds.includes(food.id)))
+    .map((nutrient) => nutrient.id));
   const pairingMatches = FOOD_PAIRINGS
     .filter((pairing) => pairing.foods.some((foodId) => selectedIds.includes(foodId)))
     .slice(0, 6);
@@ -731,49 +763,45 @@ function renderFoodPage() {
               <span>Search foods or nutrients</span>
               <input id="foodSearch" type="search" value="${escapeHtml(appState.foodSearch)}" placeholder="Try protein, potassium, blueberries..." />
             </label>
-            <div class="food-group-tabs" aria-label="Food groups">
-              <button class="food-group-button ${appState.foodGroup === "all" ? "is-active" : ""}" type="button" data-food-group="all">All</button>
-              ${FOOD_GROUPS.map((group) => `
-                <button class="food-group-button ${appState.foodGroup === group.id ? "is-active" : ""}" type="button" data-food-group="${group.id}" style="--group-color: ${group.theme}">
-                  ${group.label}
-                </button>
-              `).join("")}
-            </div>
+            <label class="food-group-select">
+              <span>Food group</span>
+              <select id="foodGroupSelect">
+                <option value="all" ${appState.foodGroup === "all" ? "selected" : ""}>All food groups</option>
+                ${FOOD_GROUPS.map((group) => `<option value="${group.id}" ${appState.foodGroup === group.id ? "selected" : ""}>${group.label}</option>`).join("")}
+              </select>
+            </label>
+            <p class="food-result-count">${availableFoods.length} foods available</p>
           </div>
 
           <div class="food-grid">
-            ${filteredFoods.map((food) => {
-              const group = getFoodGroup(food.group);
-              const selected = selectedIds.includes(food.id);
-              return `
-                <article class="food-card">
-                  <div class="food-card-head">
-                    <span class="food-dot" style="--food-color: ${group.theme}"></span>
-                    <div>
-                      <p>${group.label}</p>
-                      <h3>${food.name}</h3>
-                    </div>
-                  </div>
-                  <p class="serving-line">${food.serving}</p>
-                  <div class="macro-row">
-                    <span>${food.calories} cal</span>
-                    <span>${food.protein}g protein</span>
-                    <span>${food.carbs}g carbs</span>
-                    <span>${food.fat}g fat</span>
-                  </div>
-                  <div class="nutrient-tags">
-                    ${food.nutrients.map((nutrient) => `<span>${nutrient}</span>`).join("")}
-                  </div>
-                  <button class="secondary-button" type="button" data-food="${food.id}">
-                    ${selected ? "Remove" : "Add to plate"}
-                  </button>
-                </article>
-              `;
-            }).join("")}
+            ${availableFoods.length > 0
+              ? availableFoods.map((food) => foodCardMarkup(food)).join("")
+              : `<p class="food-empty-state">No available foods match this search and food group.</p>`}
           </div>
         </section>
 
-        <aside class="nutrition-panel">
+        <section class="food-workspace">
+          <section class="nutrient-checklist-card">
+            <div class="panel-heading">
+              <div>
+                <p>Plate Nutrients</p>
+                <h2>${coveredNutrientIds.size} of ${NUTRIENTS.length} covered</h2>
+              </div>
+            </div>
+            <div class="food-nutrient-checklist">
+              ${NUTRIENTS.map((nutrient) => {
+                const covered = coveredNutrientIds.has(nutrient.id);
+                const category = getNutrientCategory(nutrient.category);
+                return `
+                  <label class="food-nutrient-item ${covered ? "is-covered" : ""}" style="--nutrient-color: ${category.theme}">
+                    <input type="checkbox" ${covered ? "checked" : ""} disabled />
+                    <span>${nutrient.name}</span>
+                  </label>
+                `;
+              }).join("")}
+            </div>
+          </section>
+
           <section class="plate-card">
             <div class="panel-heading">
               <div>
@@ -789,34 +817,15 @@ function renderFoodPage() {
               <article><span>${totals.fat}g</span><p>fat</p></article>
               <article><span>${totals.fiber}g</span><p>fiber</p></article>
             </div>
-            <div class="selected-food-list">
-              ${selectedFoods.length === 0 ? `<p class="muted-text">Add foods from the library to build a meal.</p>` : selectedFoods.map((food) => `
-                <button type="button" data-remove-food="${food.id}">
-                  <span>${food.name}</span>
-                  <strong>${food.calories} cal</strong>
-                </button>
-              `).join("")}
+            <div class="selected-plate-grid">
+              ${selectedFoods.length === 0
+                ? `<p class="food-empty-state">Add foods from the library and their cards will move here.</p>`
+                : selectedFoods.map((food) => foodCardMarkup(food, true)).join("")}
             </div>
           </section>
+        </section>
 
-          <section class="pairing-card">
-            <div class="panel-heading">
-              <div>
-                <p>Pairing Ideas</p>
-                <h2>Foods That Work Together</h2>
-              </div>
-            </div>
-            <div class="pairing-list">
-              ${visiblePairings.map((pairing) => `
-                <article>
-                  <h3>${pairing.name}</h3>
-                  <p>${pairing.reason}</p>
-                  <button class="text-button" type="button" data-pairing="${pairing.id}">Use pairing</button>
-                </article>
-              `).join("")}
-            </div>
-          </section>
-
+        <aside class="nutrition-panel">
           <section class="calorie-card">
             <div class="panel-heading">
               <div>
@@ -858,6 +867,24 @@ function renderFoodPage() {
             </div>
             <p class="routine-note">Rough daily reference with baseline: ${estimate.roughDailyReference} calories. Food labels and individual needs vary.</p>
           </section>
+
+          <section class="pairing-card">
+            <div class="panel-heading">
+              <div>
+                <p>Pairing Ideas</p>
+                <h2>Foods That Work Together</h2>
+              </div>
+            </div>
+            <div class="pairing-list">
+              ${visiblePairings.map((pairing) => `
+                <article>
+                  <h3>${pairing.name}</h3>
+                  <p>${pairing.reason}</p>
+                  <button class="text-button" type="button" data-pairing="${pairing.id}">Use pairing</button>
+                </article>
+              `).join("")}
+            </div>
+          </section>
         </aside>
       </div>
       <p class="safety-note">General nutrition information only. For medical conditions, allergies, pregnancy, eating disorders, or prescribed diets, work with a qualified clinician or dietitian.</p>
@@ -867,13 +894,14 @@ function renderFoodPage() {
   pageRoot.querySelector("#foodSearch").addEventListener("input", (event) => {
     appState.foodSearch = event.target.value;
     renderFoodPage();
+    const search = pageRoot.querySelector("#foodSearch");
+    search.focus();
+    search.setSelectionRange(search.value.length, search.value.length);
   });
 
-  pageRoot.querySelectorAll("[data-food-group]").forEach((button) => {
-    button.addEventListener("click", () => {
-      appState.foodGroup = button.dataset.foodGroup;
-      renderFoodPage();
-    });
+  pageRoot.querySelector("#foodGroupSelect").addEventListener("change", (event) => {
+    appState.foodGroup = event.target.value;
+    renderFoodPage();
   });
 
   pageRoot.querySelectorAll("[data-food]").forEach((button) => {
@@ -883,13 +911,6 @@ function renderFoodPage() {
       } else {
         appState.selectedFoods = [...appState.selectedFoods, button.dataset.food];
       }
-      renderFoodPage();
-    });
-  });
-
-  pageRoot.querySelectorAll("[data-remove-food]").forEach((button) => {
-    button.addEventListener("click", () => {
-      appState.selectedFoods = appState.selectedFoods.filter((id) => id !== button.dataset.removeFood);
       renderFoodPage();
     });
   });
