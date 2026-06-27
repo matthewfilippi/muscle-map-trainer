@@ -7,8 +7,6 @@ import {
   FOODS,
   LEVELS,
   MUSCLES,
-  NUTRIENT_CATEGORIES,
-  NUTRIENTS,
   SPLITS,
   STRETCH_ROUTINE,
   WORK_ACTIVITY_LEVELS,
@@ -21,10 +19,21 @@ import {
   getFood,
   getMuscle
 } from "./data.js";
+import { FOOD_NUTRIENT_PROFILES } from "./foodNutrients.js";
+import {
+  NUTRIENT_CATEGORIES,
+  NUTRIENTS,
+  getDriGroup,
+  getNutrientTarget,
+  normalizeNutritionProfile
+} from "./nutrition.js";
 
 const PAGES = new Set(["body", "routine", "stretches", "food", "nutrients"]);
 const WEEK_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const NUTRIENT_LOG_KEY = "wellness-map-nutrient-log";
+const NUTRITION_PROFILE_KEY = "wellness-map-nutrition-profile";
+const FOOD_PLATE_KEY = "wellness-map-food-plate";
+const DEFAULT_PLATE = ["chicken-breast", "quinoa", "broccoli"];
 
 function getCurrentWeekKey() {
   const monday = new Date();
@@ -47,6 +56,32 @@ function loadNutrientLog() {
   }
 }
 
+function loadNutritionProfile() {
+  try {
+    return normalizeNutritionProfile(JSON.parse(localStorage.getItem(NUTRITION_PROFILE_KEY)) || {});
+  } catch {
+    return normalizeNutritionProfile({});
+  }
+}
+
+function loadFoodPlate() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(FOOD_PLATE_KEY));
+    const selectedFoods = Array.isArray(stored?.foods)
+      ? stored.foods.filter((id) => getFood(id))
+      : DEFAULT_PLATE;
+    const foodServings = Object.fromEntries(selectedFoods.map((id) => [
+      id,
+      Math.min(20, Math.max(0.05, Number(stored?.servings?.[id]) || 1))
+    ]));
+    return { selectedFoods, foodServings };
+  } catch {
+    return { selectedFoods: DEFAULT_PLATE, foodServings: Object.fromEntries(DEFAULT_PLATE.map((id) => [id, 1])) };
+  }
+}
+
+const savedPlate = loadFoodPlate();
+
 const appState = {
   page: "body",
   selectedMuscle: "chest",
@@ -58,7 +93,8 @@ const appState = {
   completedStretches: [],
   foodGroup: "all",
   foodSearch: "",
-  selectedFoods: ["chicken-breast", "quinoa", "broccoli"],
+  selectedFoods: savedPlate.selectedFoods,
+  foodServings: savedPlate.foodServings,
   calorieWeight: 180,
   workHours: 8,
   workActivity: "desk",
@@ -66,7 +102,8 @@ const appState = {
   exerciseActivity: "strength",
   nutrientCategory: "all",
   selectedNutrient: "protein",
-  nutrientLog: loadNutrientLog()
+  nutrientLog: loadNutrientLog(),
+  nutritionProfile: loadNutritionProfile()
 };
 
 let bodyScene = null;
@@ -644,11 +681,15 @@ function getFoodGroup(id) {
 
 function getFilteredFoods() {
   const query = appState.foodSearch.trim().toLowerCase();
+  const matchingNutrientIds = NUTRIENTS
+    .filter((nutrient) => nutrient.name.toLowerCase().includes(query))
+    .map((nutrient) => nutrient.id);
   return FOODS.filter((food) => {
     const groupMatches = appState.foodGroup === "all" || food.group === appState.foodGroup;
     const queryMatches = !query
       || food.name.toLowerCase().includes(query)
-      || food.nutrients.some((nutrient) => nutrient.toLowerCase().includes(query));
+      || food.nutrients.some((nutrient) => nutrient.toLowerCase().includes(query))
+      || matchingNutrientIds.some((id) => Number(FOOD_NUTRIENT_PROFILES[food.id]?.values?.[id]) > 0);
     return groupMatches && queryMatches;
   });
 }
@@ -657,17 +698,129 @@ function getSelectedFoods() {
   return appState.selectedFoods.map(getFood).filter(Boolean);
 }
 
+function getFoodServings(foodId) {
+  return Math.min(20, Math.max(0.05, Number(appState.foodServings[foodId]) || 1));
+}
+
+function saveFoodPlate() {
+  try {
+    localStorage.setItem(FOOD_PLATE_KEY, JSON.stringify({
+      foods: appState.selectedFoods,
+      servings: appState.foodServings
+    }));
+  } catch {
+    // The plate remains usable for the current session if storage is unavailable.
+  }
+}
+
+function saveNutritionProfile() {
+  appState.nutritionProfile = normalizeNutritionProfile(appState.nutritionProfile);
+  try {
+    localStorage.setItem(NUTRITION_PROFILE_KEY, JSON.stringify(appState.nutritionProfile));
+  } catch {
+    // Profile changes remain usable for the current session if storage is unavailable.
+  }
+}
+
 function getFoodTotals() {
   return getSelectedFoods().reduce(
-    (totals, food) => ({
-      calories: totals.calories + food.calories,
-      protein: totals.protein + food.protein,
-      carbs: totals.carbs + food.carbs,
-      fat: totals.fat + food.fat,
-      fiber: totals.fiber + food.fiber
-    }),
+    (totals, food) => {
+      const servings = getFoodServings(food.id);
+      return {
+        calories: totals.calories + (food.calories * servings),
+        protein: totals.protein + (food.protein * servings),
+        carbs: totals.carbs + (food.carbs * servings),
+        fat: totals.fat + (food.fat * servings),
+        fiber: totals.fiber + (food.fiber * servings)
+      };
+    },
     { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 }
   );
+}
+
+function getPlateNutrientTotals() {
+  const selectedFoods = getSelectedFoods();
+  return Object.fromEntries(NUTRIENTS.map((nutrient) => {
+    let value = 0;
+    let reportedFoods = 0;
+    selectedFoods.forEach((food) => {
+      const amount = FOOD_NUTRIENT_PROFILES[food.id]?.values?.[nutrient.id];
+      if (Number.isFinite(amount)) {
+        value += amount * getFoodServings(food.id);
+        reportedFoods += 1;
+      }
+    });
+    return [nutrient.id, {
+      value: reportedFoods ? value : null,
+      reportedFoods,
+      totalFoods: selectedFoods.length,
+      complete: reportedFoods === selectedFoods.length
+    }];
+  }));
+}
+
+function getNutrientStatus(nutrient, amount) {
+  const target = getNutrientTarget(nutrient.id, appState.nutritionProfile);
+  if (amount.value === null) return { state: "unavailable", label: "No plate estimate", percent: 0 };
+  if (nutrient.id === "sodium") {
+    const percent = (amount.value / target.limit) * 100;
+    return amount.value <= target.limit
+      ? { state: "covered", label: `${formatNutrientNumber(amount.value)} / ${formatNutrientNumber(target.limit)} ${nutrient.unit} limit`, percent }
+      : { state: "over", label: `${formatNutrientNumber(amount.value - target.limit)} ${nutrient.unit} over limit`, percent };
+  }
+  const percent = (amount.value / target.value) * 100;
+  return {
+    state: percent >= 100 ? "covered" : "partial",
+    label: `${formatNutrientNumber(amount.value)} / ${formatNutrientNumber(target.value)} ${nutrient.unit}`,
+    percent
+  };
+}
+
+function nutritionProfileMarkup() {
+  const group = getDriGroup(appState.nutritionProfile);
+  const lifeStageEnabled = group.sex === "female" && group.age >= 14 && group.age <= 50;
+  return `
+    <div class="nutrition-profile-form">
+      <label>
+        <span>Age</span>
+        <input id="nutritionAge" type="number" min="4" max="120" value="${group.age}" />
+      </label>
+      <label>
+        <span>Sex used by DRI table</span>
+        <select id="nutritionSex">
+          <option value="female" ${group.sex === "female" ? "selected" : ""}>Female</option>
+          <option value="male" ${group.sex === "male" ? "selected" : ""}>Male</option>
+        </select>
+      </label>
+      <label>
+        <span>Life stage</span>
+        <select id="nutritionLifeStage" ${lifeStageEnabled ? "" : "disabled"}>
+          <option value="none" ${group.lifeStage === "none" ? "selected" : ""}>Not pregnant or breastfeeding</option>
+          <option value="pregnant" ${group.lifeStage === "pregnant" ? "selected" : ""}>Pregnant</option>
+          <option value="lactating" ${group.lifeStage === "lactating" ? "selected" : ""}>Breastfeeding</option>
+        </select>
+      </label>
+    </div>
+    <p class="profile-reference-label">Using DRI reference group: <strong>${group.label}</strong></p>
+  `;
+}
+
+function bindNutritionProfileControls(pageRoot, rerender) {
+  pageRoot.querySelector("#nutritionAge")?.addEventListener("change", (event) => {
+    appState.nutritionProfile.age = event.target.value;
+    saveNutritionProfile();
+    rerender();
+  });
+  pageRoot.querySelector("#nutritionSex")?.addEventListener("change", (event) => {
+    appState.nutritionProfile.sex = event.target.value;
+    saveNutritionProfile();
+    rerender();
+  });
+  pageRoot.querySelector("#nutritionLifeStage")?.addEventListener("change", (event) => {
+    appState.nutritionProfile.lifeStage = event.target.value;
+    saveNutritionProfile();
+    rerender();
+  });
 }
 
 function estimateActivityCalories(met, minutes, weightLb) {
@@ -697,6 +850,7 @@ function getActivityEstimate() {
 
 function foodCardMarkup(food, selected = false) {
   const group = getFoodGroup(food.group);
+  const profile = FOOD_NUTRIENT_PROFILES[food.id];
   return `
     <article class="food-card ${selected ? "is-on-plate" : ""}">
       <div class="food-card-head">
@@ -716,6 +870,13 @@ function foodCardMarkup(food, selected = false) {
       <div class="nutrient-tags">
         ${food.nutrients.map((nutrient) => `<span>${nutrient}</span>`).join("")}
       </div>
+      ${selected ? `
+        <label class="food-serving-control">
+          <span>Number of servings</span>
+          <input type="number" min="0.05" max="20" step="0.25" value="${getFoodServings(food.id)}" data-food-servings="${food.id}" />
+        </label>
+      ` : ""}
+      ${!profile?.source ? `<p class="data-availability-note">Detailed USDA profile unavailable; macros only.</p>` : ""}
       <button class="secondary-button" type="button" data-food="${food.id}">
         ${selected ? "Remove from plate" : "Add to plate"}
       </button>
@@ -729,11 +890,15 @@ function renderFoodPage() {
   const selectedFoods = getSelectedFoods();
   const totals = getFoodTotals();
   const estimate = getActivityEstimate();
+  const plateNutrients = getPlateNutrientTotals();
+  const nutrientStatuses = Object.fromEntries(NUTRIENTS.map((nutrient) => [
+    nutrient.id,
+    getNutrientStatus(nutrient, plateNutrients[nutrient.id])
+  ]));
+  const metNutrients = NUTRIENTS.filter((nutrient) => nutrientStatuses[nutrient.id].state === "covered").length;
+  const unavailableNutrients = NUTRIENTS.filter((nutrient) => nutrientStatuses[nutrient.id].state === "unavailable").length;
   const selectedIds = selectedFoods.map((food) => food.id);
   const availableFoods = filteredFoods.filter((food) => !selectedIds.includes(food.id));
-  const coveredNutrientIds = new Set(NUTRIENTS
-    .filter((nutrient) => selectedFoods.some((food) => nutrient.foodIds.includes(food.id)))
-    .map((nutrient) => nutrient.id));
   const pairingMatches = FOOD_PAIRINGS
     .filter((pairing) => pairing.foods.some((foodId) => selectedIds.includes(foodId)))
     .slice(0, 6);
@@ -784,19 +949,25 @@ function renderFoodPage() {
           <section class="nutrient-checklist-card">
             <div class="panel-heading">
               <div>
-                <p>Plate Nutrients</p>
-                <h2>${coveredNutrientIds.size} of ${NUTRIENTS.length} covered</h2>
+                <p>Personal Daily Targets</p>
+                <h2>${metNutrients} of ${NUTRIENTS.length} on target</h2>
               </div>
             </div>
+            ${nutritionProfileMarkup()}
+            <p class="nutrient-estimate-note">Estimates use the serving counts below. ${unavailableNutrients ? `${unavailableNutrients} nutrients require label or manual data.` : "All nutrients have a plate estimate."}</p>
             <div class="food-nutrient-checklist">
               ${NUTRIENTS.map((nutrient) => {
-                const covered = coveredNutrientIds.has(nutrient.id);
+                const status = nutrientStatuses[nutrient.id];
                 const category = getNutrientCategory(nutrient.category);
                 return `
-                  <label class="food-nutrient-item ${covered ? "is-covered" : ""}" style="--nutrient-color: ${category.theme}">
-                    <input type="checkbox" ${covered ? "checked" : ""} disabled />
-                    <span>${nutrient.name}</span>
-                  </label>
+                  <div class="food-nutrient-item is-${status.state}" style="--nutrient-color: ${category.theme}">
+                    <span class="nutrient-status-mark" aria-hidden="true"></span>
+                    <span>
+                      <strong>${nutrient.name}</strong>
+                      <small>${status.label}${plateNutrients[nutrient.id].complete ? "" : " (partial data)"}</small>
+                    </span>
+                    <span class="food-nutrient-progress"><i style="width: ${Math.min(status.percent, 100)}%"></i></span>
+                  </div>
                 `;
               }).join("")}
             </div>
@@ -811,11 +982,11 @@ function renderFoodPage() {
               <button class="text-button" type="button" id="clearPlate" ${selectedFoods.length === 0 ? "disabled" : ""}>Clear</button>
             </div>
             <div class="plate-totals">
-              <article><span>${totals.calories}</span><p>calories</p></article>
-              <article><span>${totals.protein}g</span><p>protein</p></article>
-              <article><span>${totals.carbs}g</span><p>carbs</p></article>
-              <article><span>${totals.fat}g</span><p>fat</p></article>
-              <article><span>${totals.fiber}g</span><p>fiber</p></article>
+              <article><span>${formatNutrientNumber(totals.calories)}</span><p>calories</p></article>
+              <article><span>${formatNutrientNumber(totals.protein)}g</span><p>protein</p></article>
+              <article><span>${formatNutrientNumber(totals.carbs)}g</span><p>carbs</p></article>
+              <article><span>${formatNutrientNumber(totals.fat)}g</span><p>fat</p></article>
+              <article><span>${formatNutrientNumber(totals.fiber)}g</span><p>fiber</p></article>
             </div>
             <div class="selected-plate-grid">
               ${selectedFoods.length === 0
@@ -863,7 +1034,7 @@ function renderFoodPage() {
               <article><span>${estimate.workCalories}</span><p>work calories</p></article>
               <article><span>${estimate.exerciseCalories}</span><p>exercise calories</p></article>
               <article><span>${estimate.activeCalories}</span><p>movement total</p></article>
-              <article><span>${totals.calories - estimate.activeCalories}</span><p>plate minus movement</p></article>
+              <article><span>${formatNutrientNumber(totals.calories - estimate.activeCalories)}</span><p>plate minus movement</p></article>
             </div>
             <p class="routine-note">Rough daily reference with baseline: ${estimate.roughDailyReference} calories. Food labels and individual needs vary.</p>
           </section>
@@ -910,13 +1081,35 @@ function renderFoodPage() {
         appState.selectedFoods = appState.selectedFoods.filter((id) => id !== button.dataset.food);
       } else {
         appState.selectedFoods = [...appState.selectedFoods, button.dataset.food];
+        appState.foodServings = { ...appState.foodServings, [button.dataset.food]: 1 };
       }
+      saveFoodPlate();
+      renderFoodPage();
+    });
+  });
+
+  pageRoot.querySelectorAll("[data-food-servings]").forEach((input) => {
+    input.addEventListener("input", (event) => {
+      appState.foodServings = {
+        ...appState.foodServings,
+        [event.target.dataset.foodServings]: Math.min(20, Math.max(0.05, Number(event.target.value) || 1))
+      };
+      saveFoodPlate();
+    });
+    input.addEventListener("change", (event) => {
+      appState.foodServings = {
+        ...appState.foodServings,
+        [event.target.dataset.foodServings]: Math.min(20, Math.max(0.05, Number(event.target.value) || 1))
+      };
+      saveFoodPlate();
       renderFoodPage();
     });
   });
 
   pageRoot.querySelector("#clearPlate").addEventListener("click", () => {
     appState.selectedFoods = [];
+    appState.foodServings = {};
+    saveFoodPlate();
     renderFoodPage();
   });
 
@@ -925,6 +1118,8 @@ function renderFoodPage() {
       const pairing = FOOD_PAIRINGS.find((item) => item.id === button.dataset.pairing);
       if (!pairing) return;
       appState.selectedFoods = pairing.foods;
+      appState.foodServings = Object.fromEntries(pairing.foods.map((id) => [id, 1]));
+      saveFoodPlate();
       renderFoodPage();
     });
   });
@@ -939,6 +1134,8 @@ function renderFoodPage() {
     field.addEventListener("input", updateCalculator);
     field.addEventListener("change", updateCalculator);
   });
+
+  bindNutritionProfileControls(pageRoot, renderFoodPage);
 }
 
 function getNutrientCategory(id) {
@@ -955,7 +1152,10 @@ function getNutrientWeekValues(nutrientId) {
 }
 
 function formatNutrientNumber(value) {
-  return Number(Number(value).toFixed(1)).toLocaleString();
+  const numeric = Number(value) || 0;
+  const absolute = Math.abs(numeric);
+  const digits = absolute > 0 && absolute < 0.01 ? 4 : absolute < 1 ? 2 : 1;
+  return numeric.toLocaleString(undefined, { maximumFractionDigits: digits });
 }
 
 function saveNutrientLog() {
@@ -974,12 +1174,16 @@ function getNutrientProgress(nutrient) {
   const values = getNutrientWeekValues(nutrient.id);
   const today = values[todayIndex];
   const weekly = values.reduce((sum, value) => sum + value, 0);
-  const weeklyTarget = nutrient.dailyValue * 7;
+  const target = getNutrientTarget(nutrient.id, appState.nutritionProfile);
+  const dailyReference = nutrient.id === "sodium" ? target.limit : target.value;
+  const weeklyTarget = dailyReference * 7;
 
   return {
+    target,
+    dailyReference,
     today,
     todayIndex,
-    todayPercent: (today / nutrient.dailyValue) * 100,
+    todayPercent: (today / dailyReference) * 100,
     weekly,
     weeklyTarget,
     weeklyPercent: (weekly / weeklyTarget) * 100,
@@ -996,8 +1200,8 @@ function updateNutrientTrackerSummary() {
     "today-value": `${formatNutrientNumber(progress.today)} ${nutrient.unit}`,
     "week-value": `${formatNutrientNumber(progress.weekly)} ${nutrient.unit}`,
     "remaining-value": `${formatNutrientNumber(progress.remaining)} ${nutrient.unit}`,
-    "today-percent": `${Math.round(progress.todayPercent)}% of daily reference`,
-    "week-percent": `${Math.round(progress.weeklyPercent)}% of weekly reference`
+    "today-percent": `${Math.round(progress.todayPercent)}% of ${nutrient.id === "sodium" ? "daily limit" : "daily target"}`,
+    "week-percent": `${Math.round(progress.weeklyPercent)}% of ${nutrient.id === "sodium" ? "weekly limit" : "weekly target"}`
   };
 
   Object.entries(updates).forEach(([key, value]) => {
@@ -1018,8 +1222,14 @@ function renderNutrientsPage() {
   const visibleNutrients = NUTRIENTS.filter((item) => (
     appState.nutrientCategory === "all" || item.category === appState.nutrientCategory
   ));
-  const sourceFoods = nutrient.foodIds.map(getFood).filter(Boolean);
+  const sourceFoods = FOODS
+    .filter((food) => Number(FOOD_NUTRIENT_PROFILES[food.id]?.values?.[nutrient.id]) > 0)
+    .sort((a, b) => (
+      FOOD_NUTRIENT_PROFILES[b.id].values[nutrient.id] - FOOD_NUTRIENT_PROFILES[a.id].values[nutrient.id]
+    ));
   const progress = getNutrientProgress(nutrient);
+  const driGroup = getDriGroup(appState.nutritionProfile);
+  const plateAmount = getPlateNutrientTotals()[nutrient.id];
 
   pageRoot.innerHTML = `
     <section class="nutrients-page wellness-page">
@@ -1027,13 +1237,23 @@ function renderNutrientsPage() {
         <div>
           <p>Daily Nutrition Guide</p>
           <h1>Nutrient Targets and Weekly Tracker</h1>
-          <p class="hero-copy">Choose a nutrient to understand its role, see a general daily and weekly reference, find food sources, and log your intake across the week.</p>
+          <p class="hero-copy">Choose a nutrient to see your age- and sex-specific target, compare foods by serving, and track intake across the week.</p>
         </div>
         <div class="progress-card">
           <span>${NUTRIENTS.length}</span>
           <strong>nutrients to explore</strong>
         </div>
       </div>
+
+      <section class="nutrient-profile-card">
+        <div class="panel-heading">
+          <div>
+            <p>Nutrition Profile</p>
+            <h2>Targets for ${driGroup.label}</h2>
+          </div>
+        </div>
+        ${nutritionProfileMarkup()}
+      </section>
 
       <div class="nutrient-category-tabs" aria-label="Nutrient categories">
         <button class="nutrient-category-button ${appState.nutrientCategory === "all" ? "is-active" : ""}" type="button" data-nutrient-category="all">All nutrients</button>
@@ -1056,7 +1276,7 @@ function renderNutrientsPage() {
               return `
                 <button class="nutrient-select-button ${item.id === nutrient.id ? "is-active" : ""}" type="button" data-nutrient="${item.id}" style="--nutrient-color: ${itemCategory.theme}">
                   <span>${item.name}</span>
-                  <strong>${formatNutrientNumber(item.dailyValue)} ${item.unit} / day</strong>
+                  <strong>${formatNutrientNumber(getNutrientTarget(item.id, appState.nutritionProfile).value)} ${item.unit} ${getNutrientTarget(item.id, appState.nutritionProfile).type}</strong>
                 </button>
               `;
             }).join("")}
@@ -1070,17 +1290,17 @@ function renderNutrientsPage() {
                 <p>${category.label}</p>
                 <h2>${nutrient.name}</h2>
               </div>
-              <span class="reference-badge">FDA Daily Value</span>
+              <span class="reference-badge">DRI ${progress.target.type}</span>
             </div>
             <p class="nutrient-role">${nutrient.role}</p>
             <div class="nutrient-targets">
               <article>
-                <span>${formatNutrientNumber(nutrient.dailyValue)} ${nutrient.unit}</span>
-                <p>daily reference</p>
+                <span>${formatNutrientNumber(progress.target.value)} ${nutrient.unit}</span>
+                <p>daily ${progress.target.type}</p>
               </article>
               <article>
-                <span>${formatNutrientNumber(progress.weeklyTarget)} ${nutrient.unit}</span>
-                <p>seven-day equivalent</p>
+                <span>${nutrient.id === "sodium" ? formatNutrientNumber(progress.target.limit) : formatNutrientNumber(progress.weeklyTarget)} ${nutrient.unit}</span>
+                <p>${nutrient.id === "sodium" ? "daily reduction limit" : "seven-day equivalent"}</p>
               </article>
               <article>
                 <span>${sourceFoods.length}</span>
@@ -1098,6 +1318,14 @@ function renderNutrientsPage() {
               <button class="text-button" type="button" id="clearNutrientWeek">Clear week</button>
             </div>
             <p class="tracker-instruction">Enter the amount from nutrition labels, meal records, or guidance from your dietitian. Values are saved on this device.</p>
+
+            <div class="plate-import-row">
+              <div>
+                <span>${plateAmount.value === null ? "Unavailable" : `${formatNutrientNumber(plateAmount.value)} ${nutrient.unit}`}</span>
+                <p>current Food-page plate estimate${plateAmount.complete ? "" : " (partial data)"}</p>
+              </div>
+              <button class="secondary-button" type="button" id="usePlateForToday" ${plateAmount.value === null ? "disabled" : ""}>Use for today</button>
+            </div>
 
             <div class="nutrient-summary-grid">
               <article>
@@ -1117,12 +1345,12 @@ function renderNutrientsPage() {
             <div class="nutrient-progress-stack">
               <div class="nutrient-progress-label">
                 <span>Today</span>
-                <strong data-nutrient-summary="today-percent">${Math.round(progress.todayPercent)}% of daily reference</strong>
+                <strong data-nutrient-summary="today-percent">${Math.round(progress.todayPercent)}% of ${nutrient.id === "sodium" ? "daily limit" : "daily target"}</strong>
               </div>
               <div class="nutrient-progress-track"><span data-nutrient-progress="today" style="width: ${Math.min(progress.todayPercent, 100)}%"></span></div>
               <div class="nutrient-progress-label">
                 <span>This week</span>
-                <strong data-nutrient-summary="week-percent">${Math.round(progress.weeklyPercent)}% of weekly reference</strong>
+                <strong data-nutrient-summary="week-percent">${Math.round(progress.weeklyPercent)}% of ${nutrient.id === "sodium" ? "weekly limit" : "weekly target"}</strong>
               </div>
               <div class="nutrient-progress-track"><span data-nutrient-progress="week" style="width: ${Math.min(progress.weeklyPercent, 100)}%"></span></div>
             </div>
@@ -1148,7 +1376,7 @@ function renderNutrientsPage() {
               </div>
             </div>
             <div class="nutrient-food-grid">
-              ${sourceFoods.map((food) => {
+              ${sourceFoods.length ? sourceFoods.map((food) => {
                 const group = getFoodGroup(food.group);
                 return `
                   <article class="nutrient-food-card">
@@ -1162,24 +1390,25 @@ function renderNutrientsPage() {
                     <p class="serving-line">${food.serving}</p>
                     <div class="macro-row">
                       <span>${food.calories} cal</span>
-                      <span>${food.protein}g protein</span>
-                      <span>${food.fiber}g fiber</span>
+                      <span>${formatNutrientNumber(FOOD_NUTRIENT_PROFILES[food.id].values[nutrient.id])} ${nutrient.unit}</span>
                     </div>
                     <button class="secondary-button" type="button" data-open-food="${food.id}">Open in Food</button>
                   </article>
                 `;
-              }).join("")}
+              }).join("") : `
+                <p class="food-empty-state">USDA standard food records do not provide a dependable ${nutrient.name} estimate for this library. Use a product label, laboratory source, or dietitian-provided amount in the intake log.</p>
+              `}
             </div>
           </section>
         </div>
       </div>
 
       <div class="nutrient-reference-note">
-        <p><strong>How to use these numbers:</strong> FDA Daily Values are general label references for adults and children age 4 and older. The weekly number is the daily reference multiplied by seven, not a recommendation to consume the full amount at once.</p>
-        <p>Needs can differ by age, sex, pregnancy, health conditions, medications, and activity. Review individual guidance with a clinician or registered dietitian.</p>
+        <p><strong>How to use these numbers:</strong> Targets are U.S. Dietary Reference Intakes for healthy people age 4 and older. RDA means Recommended Dietary Allowance; AI means Adequate Intake. Seven-day equivalents are planning aids, not instructions to consume a week's amount at once.</p>
+        <p>USDA food values are serving-based estimates and natural products vary. Missing composition data is shown as unavailable. Health conditions, medications, and prescribed diets can change appropriate targets.</p>
         <div>
-          <a href="https://www.fda.gov/food/nutrition-facts-label/daily-value-nutrition-and-supplement-facts-labels" target="_blank" rel="noreferrer">FDA Daily Values</a>
-          <a href="https://ods.od.nih.gov/factsheets/list-all/" target="_blank" rel="noreferrer">NIH nutrient fact sheets</a>
+          <a href="https://ods.od.nih.gov/HealthInformation/nutrientrecommendations.aspx" target="_blank" rel="noreferrer">NIH DRI tables</a>
+          <a href="https://fdc.nal.usda.gov/" target="_blank" rel="noreferrer">USDA FoodData Central</a>
         </div>
       </div>
     </section>
@@ -1218,6 +1447,15 @@ function renderNutrientsPage() {
     renderNutrientsPage();
   });
 
+  pageRoot.querySelector("#usePlateForToday")?.addEventListener("click", () => {
+    if (plateAmount.value === null) return;
+    const values = getNutrientWeekValues(nutrient.id);
+    values[progress.todayIndex] = plateAmount.value;
+    appState.nutrientLog = { ...appState.nutrientLog, [nutrient.id]: values };
+    saveNutrientLog();
+    renderNutrientsPage();
+  });
+
   pageRoot.querySelectorAll("[data-open-food]").forEach((button) => {
     button.addEventListener("click", () => {
       const food = getFood(button.dataset.openFood);
@@ -1227,6 +1465,8 @@ function renderNutrientsPage() {
       setPage("food");
     });
   });
+
+  bindNutritionProfileControls(pageRoot, renderNutrientsPage);
 }
 
 window.addEventListener("hashchange", render);
