@@ -925,6 +925,187 @@ export const FOOD_GROUPS = [
   }
 ];
 
+export const NUTRIENT_CATEGORIES = [
+  { id: "macros", label: "Macros and Fiber", theme: "#2f7f68" },
+  { id: "vitamins", label: "Vitamins", theme: "#d88324" },
+  { id: "minerals", label: "Minerals", theme: "#3e70ad" }
+];
+
+// FDA Daily Values are general label references for adults and children age 4+.
+export const NUTRIENTS = [
+  {
+    id: "protein",
+    name: "Protein",
+    category: "macros",
+    dailyValue: 50,
+    unit: "g",
+    role: "Builds and repairs muscle and other tissues and helps make enzymes and hormones.",
+    foodIds: ["chicken-breast", "turkey", "salmon", "tuna", "sardines", "shrimp", "eggs", "lean-beef", "pork-tenderloin", "tofu", "tempeh", "edamame", "lentils", "black-beans", "chickpeas", "greek-yogurt", "cottage-cheese", "milk", "kefir", "soy-milk"]
+  },
+  {
+    id: "fiber",
+    name: "Dietary Fiber",
+    category: "macros",
+    dailyValue: 28,
+    unit: "g",
+    role: "Supports digestion, fullness, blood sugar management, and healthy cholesterol levels.",
+    foodIds: ["lentils", "black-beans", "chickpeas", "edamame", "broccoli", "brussels-sprouts", "apple", "kiwi", "avocado-fruit", "oats", "barley", "whole-grain-pasta", "chia-seeds", "flaxseed"]
+  },
+  {
+    id: "vitamin-a",
+    name: "Vitamin A",
+    category: "vitamins",
+    dailyValue: 900,
+    unit: "mcg RAE",
+    role: "Supports normal vision, immune function, growth, and cell development.",
+    foodIds: ["spinach", "kale", "bell-pepper", "carrots", "mango", "sweet-potato", "cheddar"]
+  },
+  {
+    id: "vitamin-c",
+    name: "Vitamin C",
+    category: "vitamins",
+    dailyValue: 90,
+    unit: "mg",
+    role: "Helps form collagen, supports immune function, and improves absorption of plant iron.",
+    foodIds: ["kale", "broccoli", "bell-pepper", "tomatoes", "brussels-sprouts", "bok-choy", "strawberries", "orange", "pineapple", "mango", "kiwi", "sweet-potato", "potatoes"]
+  },
+  {
+    id: "vitamin-d",
+    name: "Vitamin D",
+    category: "vitamins",
+    dailyValue: 20,
+    unit: "mcg",
+    role: "Helps the body absorb calcium and supports bones, muscles, nerves, and immune function.",
+    foodIds: ["salmon", "sardines", "eggs", "milk", "soy-milk", "almond-milk"]
+  },
+  {
+    id: "vitamin-e",
+    name: "Vitamin E",
+    category: "vitamins",
+    dailyValue: 15,
+    unit: "mg",
+    role: "Acts as an antioxidant and supports immune function and cell health.",
+    foodIds: ["almonds", "olive-oil", "olives", "almond-milk", "spinach", "avocado-fruit"]
+  },
+  {
+    id: "vitamin-k",
+    name: "Vitamin K",
+    category: "vitamins",
+    dailyValue: 120,
+    unit: "mcg",
+    role: "Supports normal blood clotting and helps maintain healthy bones.",
+    foodIds: ["spinach", "kale", "broccoli", "asparagus", "brussels-sprouts", "bok-choy", "green-beans", "cucumber", "grapes", "kiwi"]
+  },
+  {
+    id: "vitamin-b6",
+    name: "Vitamin B6",
+    category: "vitamins",
+    dailyValue: 1.7,
+    unit: "mg",
+    role: "Helps convert food into energy and supports brain development and immune function.",
+    foodIds: ["salmon", "tuna", "chicken-breast", "turkey", "pork-tenderloin", "banana", "potatoes", "chickpeas"]
+  },
+  {
+    id: "vitamin-b12",
+    name: "Vitamin B12",
+    category: "vitamins",
+    dailyValue: 2.4,
+    unit: "mcg",
+    role: "Helps form red blood cells and DNA and keeps nerve cells healthy.",
+    foodIds: ["salmon", "tuna", "sardines", "shrimp", "eggs", "lean-beef", "greek-yogurt", "milk", "kefir", "cheddar", "mozzarella", "soy-milk", "almond-milk"]
+  },
+  {
+    id: "folate",
+    name: "Folate",
+    category: "vitamins",
+    dailyValue: 400,
+    unit: "mcg DFE",
+    role: "Supports DNA production and cell division and is especially important before and during pregnancy.",
+    foodIds: ["edamame", "lentils", "black-beans", "chickpeas", "spinach", "broccoli", "asparagus", "brussels-sprouts", "beets", "orange", "mango", "avocado-fruit", "quinoa"]
+  },
+  {
+    id: "calcium",
+    name: "Calcium",
+    category: "minerals",
+    dailyValue: 1300,
+    unit: "mg",
+    role: "Builds bones and teeth and supports muscle contraction, nerves, and blood vessels.",
+    foodIds: ["sardines", "tofu", "bok-choy", "greek-yogurt", "cottage-cheese", "milk", "kefir", "cheddar", "mozzarella", "soy-milk", "almond-milk", "tahini"]
+  },
+  {
+    id: "iron",
+    name: "Iron",
+    category: "minerals",
+    dailyValue: 18,
+    unit: "mg",
+    role: "Helps make hemoglobin, which carries oxygen from the lungs to the rest of the body.",
+    foodIds: ["lean-beef", "tofu", "tempeh", "edamame", "lentils", "black-beans", "chickpeas", "spinach", "whole-wheat-bread", "whole-grain-pita", "pumpkin-seeds"]
+  },
+  {
+    id: "magnesium",
+    name: "Magnesium",
+    category: "minerals",
+    dailyValue: 420,
+    unit: "mg",
+    role: "Supports muscle and nerve function, blood glucose control, and energy production.",
+    foodIds: ["tofu", "tempeh", "edamame", "black-beans", "spinach", "oats", "brown-rice", "quinoa", "buckwheat", "almonds", "walnuts", "peanut-butter", "chia-seeds", "pumpkin-seeds"]
+  },
+  {
+    id: "potassium",
+    name: "Potassium",
+    category: "minerals",
+    dailyValue: 4700,
+    unit: "mg",
+    role: "Supports fluid balance, nerve signals, muscle contraction, and healthy blood pressure.",
+    foodIds: ["lentils", "bell-pepper", "carrots", "tomatoes", "banana", "orange", "kiwi", "avocado-fruit", "sweet-potato", "potatoes", "milk", "coconut-water"]
+  },
+  {
+    id: "zinc",
+    name: "Zinc",
+    category: "minerals",
+    dailyValue: 11,
+    unit: "mg",
+    role: "Supports immune function, wound healing, DNA production, growth, and taste.",
+    foodIds: ["turkey", "lean-beef", "pork-tenderloin", "chickpeas", "farro", "pumpkin-seeds", "cheddar"]
+  },
+  {
+    id: "selenium",
+    name: "Selenium",
+    category: "minerals",
+    dailyValue: 55,
+    unit: "mcg",
+    role: "Supports thyroid function, reproduction, DNA production, and antioxidant defenses.",
+    foodIds: ["chicken-breast", "turkey", "tuna", "shrimp", "pork-tenderloin", "mushrooms", "brown-rice", "barley", "cottage-cheese"]
+  },
+  {
+    id: "choline",
+    name: "Choline",
+    category: "minerals",
+    dailyValue: 550,
+    unit: "mg",
+    role: "Supports memory, mood, muscle control, cell membranes, and early brain development.",
+    foodIds: ["eggs", "lean-beef", "chicken-breast", "salmon", "soy-milk", "cauliflower", "broccoli"]
+  },
+  {
+    id: "iodine",
+    name: "Iodine",
+    category: "minerals",
+    dailyValue: 150,
+    unit: "mcg",
+    role: "Helps the thyroid make hormones that regulate metabolism and development.",
+    foodIds: ["tuna", "shrimp", "eggs", "milk", "greek-yogurt", "cottage-cheese"]
+  },
+  {
+    id: "phosphorus",
+    name: "Phosphorus",
+    category: "minerals",
+    dailyValue: 1250,
+    unit: "mg",
+    role: "Helps build bones and teeth and supports energy production and cell repair.",
+    foodIds: ["chicken-breast", "salmon", "lean-beef", "lentils", "greek-yogurt", "milk", "cheddar", "mozzarella", "pumpkin-seeds"]
+  }
+];
+
 export const FOODS = [
   { id: "chicken-breast", name: "Chicken Breast", group: "protein", serving: "3 oz cooked", calories: 165, protein: 31, carbs: 0, fat: 4, fiber: 0, nutrients: ["niacin", "selenium", "phosphorus"], tags: ["lean-protein", "recovery"] },
   { id: "turkey", name: "Turkey Breast", group: "protein", serving: "3 oz cooked", calories: 125, protein: 26, carbs: 0, fat: 2, fiber: 0, nutrients: ["B vitamins", "selenium", "zinc"], tags: ["lean-protein", "recovery"] },
