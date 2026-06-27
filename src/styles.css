@@ -1066,6 +1066,7 @@ h4 {
 .nutrient-overview,
 .nutrient-tracker,
 .nutrient-foods {
+  min-width: 0;
   padding: 18px;
 }
 
@@ -1193,6 +1194,9 @@ h4 {
 }
 
 .weekly-nutrient-inputs {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   display: grid;
   grid-template-columns: repeat(7, minmax(88px, 1fr));
   gap: 8px;
@@ -1320,7 +1324,7 @@ h4 {
   }
 
   .nutrient-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .nutrient-directory {
