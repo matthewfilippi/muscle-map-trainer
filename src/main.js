@@ -7,6 +7,8 @@ import {
   FOODS,
   LEVELS,
   MUSCLES,
+  NUTRIENT_CATEGORIES,
+  NUTRIENTS,
   SPLITS,
   STRETCH_ROUTINE,
   WORK_ACTIVITY_LEVELS,
@@ -20,7 +22,30 @@ import {
   getMuscle
 } from "./data.js";
 
-const PAGES = new Set(["body", "routine", "stretches", "food"]);
+const PAGES = new Set(["body", "routine", "stretches", "food", "nutrients"]);
+const WEEK_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const NUTRIENT_LOG_KEY = "wellness-map-nutrient-log";
+
+function getCurrentWeekKey() {
+  const monday = new Date();
+  const dayIndex = (monday.getDay() + 6) % 7;
+  monday.setDate(monday.getDate() - dayIndex);
+  const year = monday.getFullYear();
+  const month = String(monday.getMonth() + 1).padStart(2, "0");
+  const day = String(monday.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function loadNutrientLog() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(NUTRIENT_LOG_KEY));
+    return stored?.week === getCurrentWeekKey() && stored.values && typeof stored.values === "object"
+      ? stored.values
+      : {};
+  } catch {
+    return {};
+  }
+}
 
 const appState = {
   page: "body",
@@ -38,7 +63,10 @@ const appState = {
   workHours: 8,
   workActivity: "desk",
   exerciseMinutes: 45,
-  exerciseActivity: "strength"
+  exerciseActivity: "strength",
+  nutrientCategory: "all",
+  selectedNutrient: "protein",
+  nutrientLog: loadNutrientLog()
 };
 
 let bodyScene = null;
@@ -100,6 +128,7 @@ function buildShell() {
           <button class="nav-button" data-page="routine" type="button">Routine Generator</button>
           <button class="nav-button" data-page="stretches" type="button">Stretches</button>
           <button class="nav-button" data-page="food" type="button">Food</button>
+          <button class="nav-button" data-page="nutrients" type="button">Nutrients</button>
         </nav>
       </header>
       <main id="pageRoot"></main>
@@ -132,6 +161,8 @@ function render() {
     renderStretchesPage();
   } else if (appState.page === "food") {
     renderFoodPage();
+  } else if (appState.page === "nutrients") {
+    renderNutrientsPage();
   } else {
     renderBodyPage();
   }
@@ -886,6 +917,294 @@ function renderFoodPage() {
 
     field.addEventListener("input", updateCalculator);
     field.addEventListener("change", updateCalculator);
+  });
+}
+
+function getNutrientCategory(id) {
+  return NUTRIENT_CATEGORIES.find((category) => category.id === id);
+}
+
+function getSelectedNutrient() {
+  return NUTRIENTS.find((nutrient) => nutrient.id === appState.selectedNutrient) ?? NUTRIENTS[0];
+}
+
+function getNutrientWeekValues(nutrientId) {
+  const values = appState.nutrientLog[nutrientId];
+  return WEEK_DAYS.map((_, index) => Math.max(Number(values?.[index]) || 0, 0));
+}
+
+function formatNutrientNumber(value) {
+  return Number(Number(value).toFixed(1)).toLocaleString();
+}
+
+function saveNutrientLog() {
+  try {
+    localStorage.setItem(NUTRIENT_LOG_KEY, JSON.stringify({
+      week: getCurrentWeekKey(),
+      values: appState.nutrientLog
+    }));
+  } catch {
+    // Tracking still works for the current session if storage is unavailable.
+  }
+}
+
+function getNutrientProgress(nutrient) {
+  const todayIndex = (new Date().getDay() + 6) % 7;
+  const values = getNutrientWeekValues(nutrient.id);
+  const today = values[todayIndex];
+  const weekly = values.reduce((sum, value) => sum + value, 0);
+  const weeklyTarget = nutrient.dailyValue * 7;
+
+  return {
+    today,
+    todayIndex,
+    todayPercent: (today / nutrient.dailyValue) * 100,
+    weekly,
+    weeklyTarget,
+    weeklyPercent: (weekly / weeklyTarget) * 100,
+    remaining: Math.max(weeklyTarget - weekly, 0),
+    values
+  };
+}
+
+function updateNutrientTrackerSummary() {
+  const nutrient = getSelectedNutrient();
+  const progress = getNutrientProgress(nutrient);
+  const pageRoot = app.querySelector("#pageRoot");
+  const updates = {
+    "today-value": `${formatNutrientNumber(progress.today)} ${nutrient.unit}`,
+    "week-value": `${formatNutrientNumber(progress.weekly)} ${nutrient.unit}`,
+    "remaining-value": `${formatNutrientNumber(progress.remaining)} ${nutrient.unit}`,
+    "today-percent": `${Math.round(progress.todayPercent)}% of daily reference`,
+    "week-percent": `${Math.round(progress.weeklyPercent)}% of weekly reference`
+  };
+
+  Object.entries(updates).forEach(([key, value]) => {
+    const element = pageRoot.querySelector(`[data-nutrient-summary="${key}"]`);
+    if (element) element.textContent = value;
+  });
+
+  const todayBar = pageRoot.querySelector('[data-nutrient-progress="today"]');
+  const weekBar = pageRoot.querySelector('[data-nutrient-progress="week"]');
+  if (todayBar) todayBar.style.width = `${Math.min(progress.todayPercent, 100)}%`;
+  if (weekBar) weekBar.style.width = `${Math.min(progress.weeklyPercent, 100)}%`;
+}
+
+function renderNutrientsPage() {
+  const pageRoot = app.querySelector("#pageRoot");
+  const nutrient = getSelectedNutrient();
+  const category = getNutrientCategory(nutrient.category);
+  const visibleNutrients = NUTRIENTS.filter((item) => (
+    appState.nutrientCategory === "all" || item.category === appState.nutrientCategory
+  ));
+  const sourceFoods = nutrient.foodIds.map(getFood).filter(Boolean);
+  const progress = getNutrientProgress(nutrient);
+
+  pageRoot.innerHTML = `
+    <section class="nutrients-page wellness-page">
+      <div class="wellness-hero nutrients-hero">
+        <div>
+          <p>Daily Nutrition Guide</p>
+          <h1>Nutrient Targets and Weekly Tracker</h1>
+          <p class="hero-copy">Choose a nutrient to understand its role, see a general daily and weekly reference, find food sources, and log your intake across the week.</p>
+        </div>
+        <div class="progress-card">
+          <span>${NUTRIENTS.length}</span>
+          <strong>nutrients to explore</strong>
+        </div>
+      </div>
+
+      <div class="nutrient-category-tabs" aria-label="Nutrient categories">
+        <button class="nutrient-category-button ${appState.nutrientCategory === "all" ? "is-active" : ""}" type="button" data-nutrient-category="all">All nutrients</button>
+        ${NUTRIENT_CATEGORIES.map((item) => `
+          <button class="nutrient-category-button ${appState.nutrientCategory === item.id ? "is-active" : ""}" type="button" data-nutrient-category="${item.id}" style="--nutrient-color: ${item.theme}">${item.label}</button>
+        `).join("")}
+      </div>
+
+      <div class="nutrient-layout">
+        <aside class="nutrient-directory" aria-label="Choose a nutrient">
+          <div class="panel-heading">
+            <div>
+              <p>Nutrient Directory</p>
+              <h2>${visibleNutrients.length} options</h2>
+            </div>
+          </div>
+          <div class="nutrient-button-list">
+            ${visibleNutrients.map((item) => {
+              const itemCategory = getNutrientCategory(item.category);
+              return `
+                <button class="nutrient-select-button ${item.id === nutrient.id ? "is-active" : ""}" type="button" data-nutrient="${item.id}" style="--nutrient-color: ${itemCategory.theme}">
+                  <span>${item.name}</span>
+                  <strong>${formatNutrientNumber(item.dailyValue)} ${item.unit} / day</strong>
+                </button>
+              `;
+            }).join("")}
+          </div>
+        </aside>
+
+        <div class="nutrient-detail">
+          <section class="nutrient-overview" style="--nutrient-color: ${category.theme}">
+            <div class="nutrient-title-row">
+              <div>
+                <p>${category.label}</p>
+                <h2>${nutrient.name}</h2>
+              </div>
+              <span class="reference-badge">FDA Daily Value</span>
+            </div>
+            <p class="nutrient-role">${nutrient.role}</p>
+            <div class="nutrient-targets">
+              <article>
+                <span>${formatNutrientNumber(nutrient.dailyValue)} ${nutrient.unit}</span>
+                <p>daily reference</p>
+              </article>
+              <article>
+                <span>${formatNutrientNumber(progress.weeklyTarget)} ${nutrient.unit}</span>
+                <p>seven-day equivalent</p>
+              </article>
+              <article>
+                <span>${sourceFoods.length}</span>
+                <p>foods in this library</p>
+              </article>
+            </div>
+          </section>
+
+          <section class="nutrient-tracker">
+            <div class="panel-heading">
+              <div>
+                <p>Intake Log</p>
+                <h2>Track ${nutrient.name} This Week</h2>
+              </div>
+              <button class="text-button" type="button" id="clearNutrientWeek">Clear week</button>
+            </div>
+            <p class="tracker-instruction">Enter the amount from nutrition labels, meal records, or guidance from your dietitian. Values are saved on this device.</p>
+
+            <div class="nutrient-summary-grid">
+              <article>
+                <span data-nutrient-summary="today-value">${formatNutrientNumber(progress.today)} ${nutrient.unit}</span>
+                <p>today</p>
+              </article>
+              <article>
+                <span data-nutrient-summary="week-value">${formatNutrientNumber(progress.weekly)} ${nutrient.unit}</span>
+                <p>logged this week</p>
+              </article>
+              <article>
+                <span data-nutrient-summary="remaining-value">${formatNutrientNumber(progress.remaining)} ${nutrient.unit}</span>
+                <p>remaining to reference</p>
+              </article>
+            </div>
+
+            <div class="nutrient-progress-stack">
+              <div class="nutrient-progress-label">
+                <span>Today</span>
+                <strong data-nutrient-summary="today-percent">${Math.round(progress.todayPercent)}% of daily reference</strong>
+              </div>
+              <div class="nutrient-progress-track"><span data-nutrient-progress="today" style="width: ${Math.min(progress.todayPercent, 100)}%"></span></div>
+              <div class="nutrient-progress-label">
+                <span>This week</span>
+                <strong data-nutrient-summary="week-percent">${Math.round(progress.weeklyPercent)}% of weekly reference</strong>
+              </div>
+              <div class="nutrient-progress-track"><span data-nutrient-progress="week" style="width: ${Math.min(progress.weeklyPercent, 100)}%"></span></div>
+            </div>
+
+            <div class="weekly-nutrient-inputs">
+              ${WEEK_DAYS.map((day, index) => `
+                <label class="${index === progress.todayIndex ? "is-today" : ""}">
+                  <span>${day}${index === progress.todayIndex ? " (today)" : ""}</span>
+                  <div>
+                    <input type="number" min="0" step="any" inputmode="decimal" value="${progress.values[index] || ""}" placeholder="0" data-nutrient-day="${index}" aria-label="${day} ${nutrient.name} in ${nutrient.unit}" />
+                    <strong>${nutrient.unit}</strong>
+                  </div>
+                </label>
+              `).join("")}
+            </div>
+          </section>
+
+          <section class="nutrient-foods">
+            <div class="panel-heading">
+              <div>
+                <p>Food Sources</p>
+                <h2>Foods With ${nutrient.name}</h2>
+              </div>
+            </div>
+            <div class="nutrient-food-grid">
+              ${sourceFoods.map((food) => {
+                const group = getFoodGroup(food.group);
+                return `
+                  <article class="nutrient-food-card">
+                    <div class="food-card-head">
+                      <span class="food-dot" style="--food-color: ${group.theme}"></span>
+                      <div>
+                        <p>${group.label}</p>
+                        <h3>${food.name}</h3>
+                      </div>
+                    </div>
+                    <p class="serving-line">${food.serving}</p>
+                    <div class="macro-row">
+                      <span>${food.calories} cal</span>
+                      <span>${food.protein}g protein</span>
+                      <span>${food.fiber}g fiber</span>
+                    </div>
+                    <button class="secondary-button" type="button" data-open-food="${food.id}">Open in Food</button>
+                  </article>
+                `;
+              }).join("")}
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <div class="nutrient-reference-note">
+        <p><strong>How to use these numbers:</strong> FDA Daily Values are general label references for adults and children age 4 and older. The weekly number is the daily reference multiplied by seven, not a recommendation to consume the full amount at once.</p>
+        <p>Needs can differ by age, sex, pregnancy, health conditions, medications, and activity. Review individual guidance with a clinician or registered dietitian.</p>
+        <div>
+          <a href="https://www.fda.gov/food/nutrition-facts-label/daily-value-nutrition-and-supplement-facts-labels" target="_blank" rel="noreferrer">FDA Daily Values</a>
+          <a href="https://ods.od.nih.gov/factsheets/list-all/" target="_blank" rel="noreferrer">NIH nutrient fact sheets</a>
+        </div>
+      </div>
+    </section>
+  `;
+
+  pageRoot.querySelectorAll("[data-nutrient-category]").forEach((button) => {
+    button.addEventListener("click", () => {
+      appState.nutrientCategory = button.dataset.nutrientCategory;
+      if (appState.nutrientCategory !== "all" && nutrient.category !== appState.nutrientCategory) {
+        appState.selectedNutrient = NUTRIENTS.find((item) => item.category === appState.nutrientCategory)?.id ?? nutrient.id;
+      }
+      renderNutrientsPage();
+    });
+  });
+
+  pageRoot.querySelectorAll("[data-nutrient]").forEach((button) => {
+    button.addEventListener("click", () => {
+      appState.selectedNutrient = button.dataset.nutrient;
+      renderNutrientsPage();
+    });
+  });
+
+  pageRoot.querySelectorAll("[data-nutrient-day]").forEach((input) => {
+    input.addEventListener("input", (event) => {
+      const values = getNutrientWeekValues(nutrient.id);
+      values[Number(event.target.dataset.nutrientDay)] = Math.max(Number(event.target.value) || 0, 0);
+      appState.nutrientLog = { ...appState.nutrientLog, [nutrient.id]: values };
+      saveNutrientLog();
+      updateNutrientTrackerSummary();
+    });
+  });
+
+  pageRoot.querySelector("#clearNutrientWeek").addEventListener("click", () => {
+    appState.nutrientLog = { ...appState.nutrientLog, [nutrient.id]: WEEK_DAYS.map(() => 0) };
+    saveNutrientLog();
+    renderNutrientsPage();
+  });
+
+  pageRoot.querySelectorAll("[data-open-food]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const food = getFood(button.dataset.openFood);
+      if (!food) return;
+      appState.foodGroup = "all";
+      appState.foodSearch = food.name;
+      setPage("food");
+    });
   });
 }
 
