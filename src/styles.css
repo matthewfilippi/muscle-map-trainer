@@ -932,6 +932,46 @@ h4 {
   color: #ffffff;
 }
 
+.secondary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.food-serving-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 86px;
+  align-items: center;
+  gap: 10px;
+  color: #3d4742;
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.food-serving-control input {
+  min-height: 36px;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0 8px;
+  color: #20242a;
+  font-weight: 850;
+}
+
+.data-availability-note,
+.nutrient-estimate-note,
+.profile-reference-label {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.data-availability-note {
+  padding: 8px;
+  border-left: 3px solid #d88324;
+  background: #fff9ef;
+}
+
 .nutrition-panel {
   display: grid;
   align-content: start;
@@ -954,7 +994,8 @@ h4 {
 .food-nutrient-item {
   min-width: 0;
   min-height: 36px;
-  display: flex;
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr);
   align-items: center;
   gap: 8px;
   padding: 7px 8px;
@@ -965,25 +1006,107 @@ h4 {
   color: #77807b;
   font-size: 0.76rem;
   font-weight: 850;
-  overflow-wrap: anywhere;
+  overflow: hidden;
 }
 
-.food-nutrient-item.is-covered {
+.food-nutrient-item.is-covered,
+.food-nutrient-item.is-partial {
   border-color: var(--nutrient-color);
   background: color-mix(in srgb, var(--nutrient-color) 10%, #ffffff);
   color: #26342e;
 }
 
-.food-nutrient-item input {
-  width: 16px;
-  height: 16px;
-  flex: 0 0 auto;
-  margin: 0;
-  accent-color: var(--nutrient-color);
+.food-nutrient-item.is-over {
+  border-color: #bd4848;
+  background: #fff3f1;
+  color: #7b2929;
 }
 
-.food-nutrient-item input:disabled {
-  opacity: 1;
+.food-nutrient-item strong,
+.food-nutrient-item small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.food-nutrient-item small {
+  margin-top: 3px;
+  color: var(--ink-soft);
+  font-size: 0.67rem;
+  font-weight: 750;
+}
+
+.nutrient-status-mark {
+  width: 10px;
+  height: 10px;
+  border: 2px solid #aab4ae;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+.is-covered .nutrient-status-mark {
+  border-color: var(--nutrient-color);
+  background: var(--nutrient-color);
+}
+
+.is-partial .nutrient-status-mark {
+  border-color: var(--nutrient-color);
+}
+
+.is-over .nutrient-status-mark {
+  border-color: #bd4848;
+  background: #bd4848;
+}
+
+.food-nutrient-progress {
+  grid-column: 1 / -1;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e4e9e6;
+}
+
+.food-nutrient-progress i {
+  display: block;
+  height: 100%;
+  background: var(--nutrient-color);
+}
+
+.is-over .food-nutrient-progress i {
+  background: #bd4848;
+}
+
+.nutrition-profile-form {
+  display: grid;
+  grid-template-columns: 0.55fr 1fr 1.2fr;
+  gap: 8px;
+  margin: 14px 0 9px;
+}
+
+.nutrition-profile-form label {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+  color: #3d4742;
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+.nutrition-profile-form input,
+.nutrition-profile-form select {
+  min-width: 0;
+  min-height: 38px;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #ffffff;
+  padding: 0 8px;
+  color: #20242a;
+  font-weight: 800;
+}
+
+.nutrition-profile-form select:disabled {
+  background: #eef1ef;
+  color: #7b837f;
 }
 
 .plate-totals,
@@ -1053,6 +1176,18 @@ h4 {
   flex-wrap: wrap;
   gap: 8px;
   margin: 20px 0 14px;
+}
+
+.nutrient-profile-card {
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.nutrient-profile-card .nutrition-profile-form {
+  max-width: 760px;
 }
 
 .nutrient-category-button {
@@ -1225,6 +1360,31 @@ h4 {
   font-size: 0.9rem;
 }
 
+.plate-import-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid #dfe6e1;
+  border-left: 4px solid var(--green);
+  border-radius: 8px;
+  background: #f7faf8;
+}
+
+.plate-import-row span {
+  color: #26342e;
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+
+.plate-import-row p {
+  margin: 3px 0 0;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+}
+
 .nutrient-summary-grid article:first-child {
   border-top: 4px solid var(--sun);
 }
@@ -1336,6 +1496,10 @@ h4 {
   background: #ffffff;
 }
 
+.nutrient-food-grid > .food-empty-state {
+  grid-column: 1 / -1;
+}
+
 .nutrient-food-card .secondary-button {
   align-self: end;
 }
@@ -1406,6 +1570,12 @@ h4 {
 
   .food-layout {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .food-library .food-grid {
+    max-height: 70vh;
+    overflow-y: auto;
+    padding-right: 4px;
   }
 
   .nutrition-panel {
@@ -1494,7 +1664,9 @@ h4 {
   .stretch-summary,
   .stretch-grid,
   .food-grid,
+  .food-nutrient-checklist,
   .calorie-form,
+  .nutrition-profile-form,
   .nutrient-targets,
   .nutrient-summary-grid,
   .nutrient-food-grid {
@@ -1508,6 +1680,11 @@ h4 {
   .nutrient-title-row,
   .nutrient-progress-label {
     align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .plate-import-row {
+    align-items: stretch;
     flex-direction: column;
   }
 
