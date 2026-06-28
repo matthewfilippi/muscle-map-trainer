@@ -1395,6 +1395,40 @@ h4 {
   margin: 18px 0;
 }
 
+.nutrient-data-note {
+  margin-top: 16px;
+  padding: 13px 14px;
+  border: 1px solid color-mix(in srgb, var(--nutrient-color) 35%, #dfe6e1);
+  border-left: 4px solid var(--nutrient-color);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--nutrient-color) 7%, #ffffff);
+}
+
+.nutrient-data-note strong,
+.nutrient-data-note p {
+  display: block;
+  margin: 0;
+}
+
+.nutrient-data-note p {
+  margin-top: 5px;
+  color: var(--ink-soft);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.nutrient-data-note a {
+  display: inline-block;
+  margin-top: 8px;
+  color: #245f50;
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.nutrient-food-card.is-qualitative .serving-line {
+  min-height: 42px;
+}
+
 .nutrient-progress-label {
   display: flex;
   justify-content: space-between;

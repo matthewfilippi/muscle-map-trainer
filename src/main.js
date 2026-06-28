@@ -19,7 +19,7 @@ import {
   getFood,
   getMuscle
 } from "./data.js";
-import { FOOD_NUTRIENT_PROFILES } from "./foodNutrients.js";
+import { FOOD_NUTRIENT_PROFILES, SPECIAL_NUTRIENT_GUIDANCE } from "./foodNutrition.js";
 import {
   NUTRIENT_CATEGORIES,
   NUTRIENTS,
@@ -689,7 +689,8 @@ function getFilteredFoods() {
     const queryMatches = !query
       || food.name.toLowerCase().includes(query)
       || food.nutrients.some((nutrient) => nutrient.toLowerCase().includes(query))
-      || matchingNutrientIds.some((id) => Number(FOOD_NUTRIENT_PROFILES[food.id]?.values?.[id]) > 0);
+      || matchingNutrientIds.some((id) => Number(FOOD_NUTRIENT_PROFILES[food.id]?.values?.[id]) > 0)
+      || matchingNutrientIds.some((id) => SPECIAL_NUTRIENT_GUIDANCE[id]?.sourceFoodIds?.includes(food.id));
     return groupMatches && queryMatches;
   });
 }
@@ -731,10 +732,11 @@ function getFoodTotals() {
         protein: totals.protein + (food.protein * servings),
         carbs: totals.carbs + (food.carbs * servings),
         fat: totals.fat + (food.fat * servings),
-        fiber: totals.fiber + (food.fiber * servings)
+        fiber: totals.fiber + (food.fiber * servings),
+        addedSugar: totals.addedSugar + ((food.addedSugar ?? 0) * servings)
       };
     },
-    { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 }
+    { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, addedSugar: 0 }
   );
 }
 
@@ -866,6 +868,7 @@ function foodCardMarkup(food, selected = false) {
         <span>${food.protein}g protein</span>
         <span>${food.carbs}g carbs</span>
         <span>${food.fat}g fat</span>
+        ${food.addedSugar ? `<span>${food.addedSugar}g added sugar</span>` : ""}
       </div>
       <div class="nutrient-tags">
         ${food.nutrients.map((nutrient) => `<span>${nutrient}</span>`).join("")}
@@ -987,6 +990,7 @@ function renderFoodPage() {
               <article><span>${formatNutrientNumber(totals.carbs)}g</span><p>carbs</p></article>
               <article><span>${formatNutrientNumber(totals.fat)}g</span><p>fat</p></article>
               <article><span>${formatNutrientNumber(totals.fiber)}g</span><p>fiber</p></article>
+              <article><span>${formatNutrientNumber(totals.addedSugar)}g</span><p>added sugar</p></article>
             </div>
             <div class="selected-plate-grid">
               ${selectedFoods.length === 0
@@ -1227,6 +1231,11 @@ function renderNutrientsPage() {
     .sort((a, b) => (
       FOOD_NUTRIENT_PROFILES[b.id].values[nutrient.id] - FOOD_NUTRIENT_PROFILES[a.id].values[nutrient.id]
     ));
+  const guidance = SPECIAL_NUTRIENT_GUIDANCE[nutrient.id];
+  const qualitativeSourceFoods = (guidance?.sourceFoodIds ?? [])
+    .map(getFood)
+    .filter((food) => food && !sourceFoods.includes(food));
+  const librarySourceCount = sourceFoods.length + qualitativeSourceFoods.length;
   const progress = getNutrientProgress(nutrient);
   const driGroup = getDriGroup(appState.nutritionProfile);
   const plateAmount = getPlateNutrientTotals()[nutrient.id];
@@ -1303,10 +1312,17 @@ function renderNutrientsPage() {
                 <p>${nutrient.id === "sodium" ? "daily reduction limit" : "seven-day equivalent"}</p>
               </article>
               <article>
-                <span>${sourceFoods.length}</span>
+                <span>${librarySourceCount}</span>
                 <p>foods in this library</p>
               </article>
             </div>
+            ${guidance ? `
+              <div class="nutrient-data-note">
+                <strong>About these estimates</strong>
+                <p>${guidance.note}</p>
+                <a href="${guidance.url}" target="_blank" rel="noreferrer">${guidance.label}</a>
+              </div>
+            ` : ""}
           </section>
 
           <section class="nutrient-tracker">
@@ -1395,9 +1411,26 @@ function renderNutrientsPage() {
                     <button class="secondary-button" type="button" data-open-food="${food.id}">Open in Food</button>
                   </article>
                 `;
-              }).join("") : `
+              }).join("") : ""}
+              ${qualitativeSourceFoods.map((food) => {
+                const group = getFoodGroup(food.group);
+                return `
+                  <article class="nutrient-food-card is-qualitative">
+                    <div class="food-card-head">
+                      <span class="food-dot" style="--food-color: ${group.theme}"></span>
+                      <div>
+                        <p>${group.label}</p>
+                        <h3>${food.name}</h3>
+                      </div>
+                    </div>
+                    <p class="serving-line">Contains ${nutrient.name}; a dependable serving amount is unavailable.</p>
+                    <button class="secondary-button" type="button" data-open-food="${food.id}">Open in Food</button>
+                  </article>
+                `;
+              }).join("")}
+              ${librarySourceCount === 0 ? `
                 <p class="food-empty-state">USDA standard food records do not provide a dependable ${nutrient.name} estimate for this library. Use a product label, laboratory source, or dietitian-provided amount in the intake log.</p>
-              `}
+              ` : ""}
             </div>
           </section>
         </div>
