@@ -28,7 +28,7 @@ export const NUTRIENTS = [
   { id: "choline", name: "Choline", category: "vitamins", unit: "mg", role: "Supports cell membranes, memory, mood, muscle control, and early brain development." },
 
   { id: "calcium", name: "Calcium", category: "minerals", unit: "mg", role: "Builds bones and teeth and supports muscle contraction, nerves, and blood vessels." },
-  { id: "chromium", name: "Chromium", category: "minerals", unit: "mcg", role: "Supports normal macronutrient metabolism and insulin action." },
+  { id: "chromium", name: "Chromium", category: "minerals", unit: "mcg", role: "Found in many foods, but its biological role and status as an essential nutrient are now uncertain. The tracker retains the historical 2001 AI as a reference." },
   { id: "copper", name: "Copper", category: "minerals", unit: "mg", role: "Supports iron metabolism, connective tissue, energy production, and antioxidant enzymes." },
   { id: "fluoride", name: "Fluoride", category: "minerals", unit: "mg", role: "Helps strengthen teeth and reduce tooth decay." },
   { id: "iodine", name: "Iodine", category: "minerals", unit: "mcg", role: "Helps the thyroid make hormones that regulate metabolism and development." },

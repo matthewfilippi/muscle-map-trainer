@@ -33,6 +33,7 @@ const FOOD_NDB = {
   "almond-milk": 14091, "olive-oil": 4053, almonds: 12061, walnuts: 12155,
   "peanut-butter": 16167, "chia-seeds": 12006, flaxseed: 12220,
   "pumpkin-seeds": 12014, tahini: 12166, olives: 9193,
+  honey: 19296, "iodized-salt": 2047,
   allspice: 2001, "anise-seed": 2002, "black-pepper": 2030, "white-pepper": 2032,
   "caraway-seed": 2005, cardamom: 2006, cayenne: 2031, "celery-seed": 2007,
   cinnamon: 2010, cloves: 2011, "coriander-seed": 2013, cumin: 2014,

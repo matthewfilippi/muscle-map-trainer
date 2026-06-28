@@ -918,6 +918,12 @@ export const FOOD_GROUPS = [
     description: "Nuts, seeds, oils, and whole-food fats that help meals stay satisfying."
   },
   {
+    id: "sweeteners",
+    label: "Sweeteners",
+    theme: "#c47a24",
+    description: "Caloric sweeteners tracked primarily for carbohydrate, calories, and added sugar."
+  },
+  {
     id: "spices",
     label: "Herbs and Spices",
     theme: "#a14f72",
@@ -1194,7 +1200,10 @@ export const FOODS = [
   { id: "tahini", name: "Tahini", group: "fats", serving: "1 tbsp", calories: 90, protein: 3, carbs: 3, fat: 8, fiber: 1, nutrients: ["calcium", "copper", "sesame lignans"], tags: ["healthy-fat"] },
   { id: "olives", name: "Olives", group: "fats", serving: "1/4 cup", calories: 40, protein: 0, carbs: 2, fat: 4, fiber: 1, nutrients: ["monounsaturated fat", "vitamin E", "polyphenols"], tags: ["healthy-fat"] },
 
+  { id: "honey", name: "Honey", group: "sweeteners", serving: "1 tbsp", calories: 64, protein: 0, carbs: 17, fat: 0, fiber: 0, addedSugar: 17, nutrients: ["added sugar", "carbohydrate"], tags: ["sweetener", "added-sugar"] },
+
   { id: "allspice", name: "Allspice", group: "spices", serving: "1 tsp ground", calories: 5, protein: 0, carbs: 1, fat: 0, fiber: 0, nutrients: ["eugenol", "manganese", "polyphenols"], tags: ["spice", "warming"] },
+  { id: "iodized-salt", name: "Iodized Table Salt", group: "spices", serving: "1/4 tsp", calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, nutrients: ["iodine", "sodium", "chloride"], tags: ["seasoning", "iodized"] },
   { id: "anise-seed", name: "Anise Seed", group: "spices", serving: "1 tsp", calories: 7, protein: 0, carbs: 1, fat: 0, fiber: 0, nutrients: ["anethole", "iron", "calcium"], tags: ["spice", "seed"] },
   { id: "annatto", name: "Annatto", group: "spices", serving: "1 tsp seed", calories: 5, protein: 0, carbs: 1, fat: 0, fiber: 0, nutrients: ["bixin", "carotenoids", "antioxidants"], tags: ["spice", "color"] },
   { id: "asafoetida", name: "Asafoetida", group: "spices", serving: "1/4 tsp", calories: 2, protein: 0, carbs: 0, fat: 0, fiber: 0, nutrients: ["sulfur compounds", "ferulic acid", "polyphenols"], tags: ["spice", "savory"] },
