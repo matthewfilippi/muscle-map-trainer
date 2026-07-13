@@ -1,5 +1,6 @@
 import "./styles.css";
 import { BodyScene } from "./bodyScene.js";
+import { BODY_SYSTEMS } from "./bodySystems.js";
 import {
   EXERCISE_ACTIVITY_LEVELS,
   FOOD_GROUPS,
@@ -28,7 +29,7 @@ import {
   normalizeNutritionProfile
 } from "./nutrition.js";
 
-const PAGES = new Set(["body", "routine", "stretches", "food", "nutrients"]);
+const PAGES = new Set(["body", "muscles", "routine", "stretches", "food", "nutrients"]);
 const WEEK_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const NUTRIENT_LOG_KEY = "wellness-map-nutrient-log";
 const NUTRITION_PROFILE_KEY = "wellness-map-nutrition-profile";
@@ -85,6 +86,7 @@ const savedPlate = loadFoodPlate();
 const appState = {
   page: "body",
   selectedMuscle: "chest",
+  visibleBodySystems: ["muscular"],
   selectedRoutineMuscles: ["chest", "shoulders", "triceps"],
   selectedEquipment: [],
   level: "beginner",
@@ -125,8 +127,17 @@ function escapeHtml(value) {
 }
 
 function routeFromHash() {
-  const page = window.location.hash.replace("#", "");
-  return PAGES.has(page) ? page : "body";
+  const hash = window.location.hash.replace("#", "");
+
+  if (hash.startsWith("muscles/")) {
+    const muscleId = hash.split("/")[1];
+    if (getMuscle(muscleId)) {
+      appState.selectedMuscle = muscleId;
+      return "muscles";
+    }
+  }
+
+  return PAGES.has(hash) ? hash : "body";
 }
 
 function setPage(page) {
@@ -135,11 +146,17 @@ function setPage(page) {
   render();
 }
 
+function setMusclePage(id) {
+  if (!getMuscle(id)) return;
+  appState.page = "muscles";
+  appState.selectedMuscle = id;
+  window.location.hash = `muscles/${id}`;
+  render();
+}
+
 function selectMuscle(id) {
   appState.selectedMuscle = id;
-  bodyScene?.setSelected(id);
-  renderBodyDetails();
-  updateMuscleButtons();
+  setMusclePage(id);
 }
 
 function getAvailableRoutineEquipmentIds() {
@@ -162,6 +179,17 @@ function buildShell() {
         </a>
         <nav class="main-nav" aria-label="Primary">
           <button class="nav-button" data-page="body" type="button">Body Map</button>
+          <div class="nav-dropdown">
+            <button class="nav-button" data-page="muscles" type="button">Muscles</button>
+            <div class="muscle-menu" aria-label="Muscle pages">
+              ${MUSCLES.map((muscle) => `
+                <a href="#muscles/${muscle.id}" data-muscle-link="${muscle.id}">
+                  <span class="swatch" style="--swatch: ${muscle.color}"></span>
+                  <span>${muscle.name}</span>
+                </a>
+              `).join("")}
+            </div>
+          </div>
           <button class="nav-button" data-page="routine" type="button">Routine Generator</button>
           <button class="nav-button" data-page="stretches" type="button">Stretches</button>
           <button class="nav-button" data-page="food" type="button">Food</button>
@@ -173,7 +201,19 @@ function buildShell() {
   `;
 
   app.querySelectorAll(".nav-button").forEach((button) => {
-    button.addEventListener("click", () => setPage(button.dataset.page));
+    button.addEventListener("click", () => {
+      if (button.dataset.page === "muscles") {
+        setMusclePage(appState.selectedMuscle);
+        return;
+      }
+      setPage(button.dataset.page);
+    });
+  });
+
+  app.querySelectorAll("[data-muscle-link]").forEach((link) => {
+    link.addEventListener("click", () => {
+      appState.selectedMuscle = link.dataset.muscleLink;
+    });
   });
 }
 
@@ -194,6 +234,8 @@ function render() {
 
   if (appState.page === "routine") {
     renderRoutinePage();
+  } else if (appState.page === "muscles") {
+    renderMusclePage();
   } else if (appState.page === "stretches") {
     renderStretchesPage();
   } else if (appState.page === "food") {
@@ -208,7 +250,7 @@ function render() {
 function renderBodyPage() {
   const pageRoot = app.querySelector("#pageRoot");
   pageRoot.innerHTML = `
-    <section class="body-page">
+    <section class="body-page body-map-page">
       <div class="model-area">
         <div class="model-toolbar" aria-label="View controls">
           <button class="icon-button" data-view="front" type="button" aria-label="Front view" title="Front view">
@@ -218,17 +260,29 @@ function renderBodyPage() {
             <span aria-hidden="true">B</span>
           </button>
         </div>
+        <div class="system-panel" aria-label="Body systems">
+          <div class="system-panel-heading">
+            <p>Body Map</p>
+            <h1>Systems</h1>
+          </div>
+          <div class="system-toggle-grid">
+            ${BODY_SYSTEMS.map((system) => `
+              <label class="system-toggle" style="--system-color: ${system.theme}">
+                <input type="checkbox" data-system="${system.id}" ${appState.visibleBodySystems.includes(system.id) ? "checked" : ""} />
+                <span></span>
+                <strong>${system.label}</strong>
+              </label>
+            `).join("")}
+          </div>
+        </div>
         <div class="muscle-scene" data-testid="muscle-scene"></div>
       </div>
-      <aside class="details-panel" aria-live="polite">
-        <div id="muscleDetails"></div>
-        <div class="muscle-list" id="muscleList"></div>
-      </aside>
     </section>
   `;
 
   bodyScene = new BodyScene(pageRoot.querySelector(".muscle-scene"), {
     selectedId: appState.selectedMuscle,
+    visibleSystems: appState.visibleBodySystems,
     onSelect: selectMuscle
   });
   bodyScene.setSelected(appState.selectedMuscle);
@@ -237,69 +291,85 @@ function renderBodyPage() {
     button.addEventListener("click", () => bodyScene.setView(button.dataset.view));
   });
 
-  renderBodyDetails();
-  renderMuscleButtons();
-}
-
-function renderBodyDetails() {
-  const detailsRoot = app.querySelector("#muscleDetails");
-  if (!detailsRoot) return;
-
-  const muscle = getMuscle(appState.selectedMuscle);
-  const exerciseItems = muscle.exercises
-    .map(
-      (exercise) => `
-        <article class="exercise-card">
-          <div>
-            <h4>${exercise.name}</h4>
-            <p>${exercise.cue}</p>
-          </div>
-          <span>${exercise.equipment}</span>
-        </article>
-      `
-    )
-    .join("");
-
-  detailsRoot.innerHTML = `
-    <div class="muscle-heading">
-      <span class="color-chip" style="--chip-color: ${muscle.color}"></span>
-      <div>
-        <p>${muscle.region}</p>
-        <h1>${muscle.name}</h1>
-      </div>
-    </div>
-    <p class="muscle-role">${muscle.role}</p>
-    <p class="routine-note">${muscle.exercises.length} exercise options</p>
-    <div class="exercise-stack">${exerciseItems}</div>
-  `;
-}
-
-function renderMuscleButtons() {
-  const list = app.querySelector("#muscleList");
-  if (!list) return;
-
-  list.innerHTML = `
-    <h2>Muscles</h2>
-    <div class="muscle-button-grid">
-      ${MUSCLES.map((muscle) => `
-        <button class="muscle-button" type="button" data-muscle="${muscle.id}">
-          <span class="swatch" style="--swatch: ${muscle.color}"></span>
-          <span>${muscle.name}</span>
-        </button>
-      `).join("")}
-    </div>
-  `;
-
-  list.querySelectorAll(".muscle-button").forEach((button) => {
-    button.addEventListener("click", () => selectMuscle(button.dataset.muscle));
+  pageRoot.querySelectorAll("[data-system]").forEach((input) => {
+    input.addEventListener("change", () => {
+      const selectedSystems = [...pageRoot.querySelectorAll("[data-system]:checked")].map((field) => field.dataset.system);
+      appState.visibleBodySystems = selectedSystems;
+      bodyScene.setVisibleSystems(selectedSystems);
+    });
   });
-
-  updateMuscleButtons();
 }
 
-function updateMuscleButtons() {
-  app.querySelectorAll(".muscle-button").forEach((button) => {
-    button.classList.toggle("is-active", button.dataset.muscle === appState.selectedMuscle);
+function renderMusclePage() {
+  const pageRoot = app.querySelector("#pageRoot");
+  const muscle = getMuscle(appState.selectedMuscle) ?? MUSCLES[0];
+  const exercisesByLevel = Object.entries(LEVELS).map(([levelId, level]) => ({
+    id: levelId,
+    label: level.label,
+    exercises: muscle.exercises.filter((exercise) => exercise.level === levelId)
+  }));
+
+  pageRoot.innerHTML = `
+    <section class="muscle-page wellness-page" style="--muscle-color: ${muscle.color}">
+      <div class="wellness-hero muscle-page-hero">
+        <div>
+          <p>${muscle.region}</p>
+          <h1>${muscle.name}</h1>
+          <p class="hero-copy">${muscle.role}</p>
+        </div>
+        <div class="progress-card">
+          <span>${muscle.exercises.length}</span>
+          <strong>exercise options</strong>
+        </div>
+      </div>
+
+      <div class="muscle-page-layout">
+        <aside class="muscle-directory" aria-label="Muscle directory">
+          <div class="panel-heading">
+            <div>
+              <p>Muscles</p>
+              <h2>Directory</h2>
+            </div>
+          </div>
+          <div class="muscle-directory-list">
+            ${MUSCLES.map((item) => `
+              <button class="muscle-directory-button ${item.id === muscle.id ? "is-active" : ""}" type="button" data-muscle-page="${item.id}" style="--swatch: ${item.color}">
+                <span class="swatch"></span>
+                <span>${item.name}</span>
+              </button>
+            `).join("")}
+          </div>
+        </aside>
+
+        <div class="muscle-exercise-library">
+          ${exercisesByLevel.map((group) => `
+            <section class="muscle-level-section">
+              <div class="panel-heading">
+                <div>
+                  <p>${group.exercises.length} exercises</p>
+                  <h2>${group.label}</h2>
+                </div>
+              </div>
+              <div class="muscle-exercise-grid">
+                ${group.exercises.map((exercise) => `
+                  <article class="exercise-card muscle-exercise-card">
+                    <div>
+                      <h3>${exercise.name}</h3>
+                      <p>${exercise.cue}</p>
+                    </div>
+                    <span>${exercise.equipment}</span>
+                  </article>
+                `).join("")}
+              </div>
+            </section>
+          `).join("")}
+        </div>
+      </div>
+    </section>
+  `;
+
+  pageRoot.querySelectorAll("[data-muscle-page]").forEach((button) => {
+    button.addEventListener("click", () => setMusclePage(button.dataset.musclePage));
   });
 }
 
