@@ -52,8 +52,8 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
-  padding: 0 clamp(16px, 4vw, 42px);
+  gap: 12px;
+  padding: 0 clamp(12px, 2.5vw, 28px);
   background: rgba(255, 255, 255, 0.86);
   border-bottom: 1px solid var(--border);
   backdrop-filter: blur(18px);
@@ -95,14 +95,66 @@ button {
   background: #eef4ef;
 }
 
+.main-nav {
+  position: relative;
+  align-items: center;
+}
+
+.nav-dropdown {
+  position: relative;
+  display: inline-flex;
+}
+
 .nav-button,
 .level-button {
   min-height: 36px;
-  padding: 0 14px;
+  padding: 0 10px;
   border: 0;
   color: #3d4742;
   background: transparent;
   font-weight: 700;
+}
+
+.muscle-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: min(360px, 90vw);
+  max-height: min(520px, calc(100vh - 104px));
+  display: none;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 18px 40px rgba(33, 45, 39, 0.16);
+  overflow-y: auto;
+  z-index: 20;
+}
+
+.nav-dropdown:hover .muscle-menu,
+.nav-dropdown:focus-within .muscle-menu {
+  display: grid;
+}
+
+.muscle-menu a {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border: 1px solid #dfe6e1;
+  border-radius: 8px;
+  color: #26342e;
+  font-size: 0.84rem;
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.muscle-menu a:hover {
+  border-color: var(--green);
+  background: #f3f8f4;
 }
 
 .nav-button.is-active,
@@ -114,13 +166,17 @@ button {
 .body-page {
   min-height: calc(100vh - 72px);
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(340px, 420px);
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .model-area {
   position: relative;
   min-height: 620px;
   overflow: hidden;
+}
+
+.body-map-page .model-area {
+  min-height: calc(100vh - 72px);
 }
 
 .muscle-scene {
@@ -142,6 +198,95 @@ button {
   z-index: 2;
   background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(14px);
+}
+
+.system-panel {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 2;
+  width: min(360px, calc(100% - 36px));
+  max-height: calc(100% - 36px);
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 16px 34px rgba(33, 45, 39, 0.12);
+  backdrop-filter: blur(16px);
+  overflow-y: auto;
+}
+
+.system-panel-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.system-panel-heading p {
+  margin: 0;
+  color: var(--green-dark);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.system-panel-heading h1 {
+  font-size: 1.25rem;
+}
+
+.system-toggle-grid {
+  display: grid;
+  gap: 7px;
+}
+
+.system-toggle {
+  min-width: 0;
+  min-height: 38px;
+  display: grid;
+  grid-template-columns: 1px 16px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid #dfe6e1;
+  border-left: 4px solid var(--system-color);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #3f4844;
+  font-size: 0.82rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.system-toggle:has(input:checked) {
+  border-color: var(--system-color);
+  background: color-mix(in srgb, var(--system-color) 14%, #ffffff);
+  color: #1f2b26;
+}
+
+.system-toggle input {
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+}
+
+.system-toggle span {
+  width: 13px;
+  height: 13px;
+  border: 2px solid var(--system-color);
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+.system-toggle input:checked + span {
+  background: var(--system-color);
+}
+
+.system-toggle strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .icon-button {
@@ -341,6 +486,90 @@ h4 {
   min-height: calc(100vh - 72px);
   display: grid;
   grid-template-columns: minmax(320px, 440px) minmax(0, 1fr);
+}
+
+.muscle-page {
+  --muscle-color: var(--green);
+}
+
+.muscle-page-hero {
+  border-bottom-color: color-mix(in srgb, var(--muscle-color) 36%, var(--border));
+}
+
+.muscle-page-hero p:first-child {
+  color: var(--muscle-color);
+}
+
+.muscle-page-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+  margin-top: 22px;
+}
+
+.muscle-directory,
+.muscle-level-section {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.muscle-directory {
+  position: sticky;
+  top: 88px;
+  max-height: calc(100vh - 108px);
+  padding: 15px;
+  overflow-y: auto;
+}
+
+.muscle-directory-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.muscle-directory-button {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 10px;
+  border: 1px solid #dfe6e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #26342e;
+  font-weight: 850;
+  text-align: left;
+}
+
+.muscle-directory-button:hover,
+.muscle-directory-button.is-active {
+  border-color: var(--swatch);
+  background: color-mix(in srgb, var(--swatch) 13%, #ffffff);
+}
+
+.muscle-exercise-library {
+  min-width: 0;
+  display: grid;
+  gap: 16px;
+}
+
+.muscle-level-section {
+  padding: 18px;
+  border-top: 5px solid var(--muscle-color);
+}
+
+.muscle-exercise-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.muscle-exercise-card {
+  align-content: start;
+  min-height: 132px;
 }
 
 .routine-builder {
@@ -1621,6 +1850,19 @@ h4 {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .muscle-page-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .muscle-directory {
+    position: static;
+    max-height: none;
+  }
+
+  .muscle-directory-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .nutrient-directory {
     position: static;
     max-height: none;
@@ -1651,9 +1893,23 @@ h4 {
     flex-wrap: wrap;
   }
 
+  .nav-dropdown {
+    flex: 1 1 calc(50% - 6px);
+  }
+
   .nav-button {
     flex: 1 1 calc(50% - 6px);
     padding: 0 8px;
+  }
+
+  .nav-dropdown .nav-button {
+    width: 100%;
+  }
+
+  .muscle-menu {
+    right: 0;
+    left: auto;
+    grid-template-columns: 1fr;
   }
 
   .body-page,
@@ -1661,9 +1917,35 @@ h4 {
     min-height: calc(100vh - 122px);
   }
 
+  .body-map-page {
+    min-height: max(560px, calc(100vh - 194px));
+  }
+
   .model-area,
   .muscle-scene {
     min-height: 500px;
+  }
+
+  .body-map-page .model-area,
+  .body-map-page .muscle-scene {
+    min-height: max(560px, calc(100vh - 194px));
+  }
+
+  .system-panel {
+    top: 58px;
+    right: 12px;
+    width: min(330px, calc(100% - 24px));
+    max-height: 260px;
+  }
+
+  .system-panel-heading h1 {
+    font-size: 1.08rem;
+  }
+
+  .system-toggle {
+    min-height: 34px;
+    padding: 6px 8px;
+    font-size: 0.76rem;
   }
 
   .muscle-button-grid,
@@ -1703,7 +1985,9 @@ h4 {
   .nutrition-profile-form,
   .nutrient-targets,
   .nutrient-summary-grid,
-  .nutrient-food-grid {
+  .nutrient-food-grid,
+  .muscle-exercise-grid,
+  .muscle-directory-list {
     grid-template-columns: 1fr;
   }
 
