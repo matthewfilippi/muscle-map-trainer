@@ -247,6 +247,33 @@ function render() {
   }
 }
 
+function renderAnatomyTooltip(tooltip, part) {
+  if (!tooltip) return;
+
+  if (!part) {
+    tooltip.hidden = true;
+    tooltip.innerHTML = "";
+    return;
+  }
+
+  tooltip.className = `anatomy-tooltip${part.isMuscle ? " is-muscle" : ""}`;
+  tooltip.style.setProperty("--tooltip-color", part.color || "#2f7650");
+  tooltip.innerHTML = part.isMuscle
+    ? `<strong>${escapeHtml(part.name)}</strong>`
+    : `
+      <span>${escapeHtml(part.systemLabel)}</span>
+      <strong>${escapeHtml(part.name)}</strong>
+      <p>${escapeHtml(part.description)}</p>
+    `;
+  tooltip.hidden = false;
+
+  const parentRect = tooltip.parentElement.getBoundingClientRect();
+  const tooltipRect = tooltip.getBoundingClientRect();
+  const x = Math.min(parentRect.width - tooltipRect.width - 12, Math.max(12, part.x + 16));
+  const y = Math.min(parentRect.height - tooltipRect.height - 12, Math.max(12, part.y + 16));
+  tooltip.style.transform = `translate(${x}px, ${y}px)`;
+}
+
 function renderBodyPage() {
   const pageRoot = app.querySelector("#pageRoot");
   pageRoot.innerHTML = `
@@ -276,14 +303,17 @@ function renderBodyPage() {
           </div>
         </div>
         <div class="muscle-scene" data-testid="muscle-scene"></div>
+        <div class="anatomy-tooltip" id="anatomyTooltip" hidden></div>
       </div>
     </section>
   `;
 
+  const anatomyTooltip = pageRoot.querySelector("#anatomyTooltip");
   bodyScene = new BodyScene(pageRoot.querySelector(".muscle-scene"), {
     selectedId: appState.selectedMuscle,
     visibleSystems: appState.visibleBodySystems,
-    onSelect: selectMuscle
+    onSelect: selectMuscle,
+    onHover: (part) => renderAnatomyTooltip(anatomyTooltip, part)
   });
   bodyScene.setSelected(appState.selectedMuscle);
 
@@ -295,6 +325,7 @@ function renderBodyPage() {
     input.addEventListener("change", () => {
       const selectedSystems = [...pageRoot.querySelectorAll("[data-system]:checked")].map((field) => field.dataset.system);
       appState.visibleBodySystems = selectedSystems;
+      renderAnatomyTooltip(anatomyTooltip, null);
       bodyScene.setVisibleSystems(selectedSystems);
     });
   });

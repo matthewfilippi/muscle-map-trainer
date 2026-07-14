@@ -191,6 +191,56 @@ button {
   height: 100%;
 }
 
+.anatomy-tooltip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 4;
+  width: min(270px, calc(100% - 24px));
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--tooltip-color, var(--green)) 36%, #dfe6e1);
+  border-left: 4px solid var(--tooltip-color, var(--green));
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #1f2b26;
+  box-shadow: 0 14px 32px rgba(31, 43, 38, 0.18);
+  pointer-events: none;
+  backdrop-filter: blur(14px);
+}
+
+.anatomy-tooltip[hidden] {
+  display: none;
+}
+
+.anatomy-tooltip span {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--green-dark);
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.anatomy-tooltip strong {
+  display: block;
+  color: #1f2b26;
+  font-size: 0.95rem;
+  line-height: 1.15;
+}
+
+.anatomy-tooltip p {
+  margin: 6px 0 0;
+  color: #50605a;
+  font-size: 0.82rem;
+  line-height: 1.38;
+}
+
+.anatomy-tooltip.is-muscle {
+  width: max-content;
+  max-width: min(220px, calc(100% - 24px));
+  padding: 8px 10px;
+}
+
 .model-toolbar {
   position: absolute;
   top: 18px;
