@@ -29,12 +29,33 @@ import {
   normalizeNutritionProfile
 } from "./nutrition.js";
 
-const PAGES = new Set(["body", "muscles", "routine", "stretches", "food", "nutrients"]);
+const PAGES = new Set(["body", "muscles", "routine", "stretches", "food", "pairings", "nutrients"]);
 const WEEK_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const NUTRIENT_LOG_KEY = "wellness-map-nutrient-log";
 const NUTRITION_PROFILE_KEY = "wellness-map-nutrition-profile";
 const FOOD_PLATE_KEY = "wellness-map-food-plate";
 const DEFAULT_PLATE = ["chicken-breast", "quinoa", "broccoli"];
+const DEFAULT_PAIRING_FOODS = ["lentils", "bell-pepper", "olive-oil"];
+const PAIRING_GOALS = [
+  { id: "absorption", label: "Absorption", cue: "maximize usable micronutrients" },
+  { id: "bloodSugar", label: "Blood sugar", cue: "smooth carbohydrate entry" },
+  { id: "gut", label: "Gut microbiome", cue: "feed and diversify gut microbes" },
+  { id: "recovery", label: "Recovery", cue: "combine protein, carbs, and anti-inflammatory support" },
+  { id: "antiNutrients", label: "Anti-nutrients", cue: "reduce mineral-binding effects" },
+  { id: "bioactives", label: "Bioactives", cue: "stack helpful plant compounds" }
+];
+const PAIRING_PREP_OPTIONS = [
+  { id: "standard", label: "Standard prep" },
+  { id: "soaked", label: "Soaked or rinsed" },
+  { id: "fermented", label: "Fermented" },
+  { id: "cooked", label: "Cooked" },
+  { id: "acid", label: "Acid added" }
+];
+const PAIRING_ORDER_OPTIONS = [
+  { id: "balanced", label: "Mixed meal" },
+  { id: "fiberFirst", label: "Fiber first" },
+  { id: "carbsFirst", label: "Carbs first" }
+];
 
 function getCurrentWeekKey() {
   const monday = new Date();
@@ -95,6 +116,11 @@ const appState = {
   completedStretches: [],
   foodGroup: "all",
   foodSearch: "",
+  pairingSearch: "",
+  selectedPairingFoods: DEFAULT_PAIRING_FOODS,
+  pairingGoal: "absorption",
+  pairingPrep: "standard",
+  pairingOrder: "balanced",
   selectedFoods: savedPlate.selectedFoods,
   foodServings: savedPlate.foodServings,
   calorieWeight: 180,
@@ -193,6 +219,7 @@ function buildShell() {
           <button class="nav-button" data-page="routine" type="button">Routine Generator</button>
           <button class="nav-button" data-page="stretches" type="button">Stretches</button>
           <button class="nav-button" data-page="food" type="button">Food</button>
+          <button class="nav-button" data-page="pairings" type="button">Pairings</button>
           <button class="nav-button" data-page="nutrients" type="button">Nutrients</button>
         </nav>
       </header>
@@ -240,6 +267,8 @@ function render() {
     renderStretchesPage();
   } else if (appState.page === "food") {
     renderFoodPage();
+  } else if (appState.page === "pairings") {
+    renderPairingsPage();
   } else if (appState.page === "nutrients") {
     renderNutrientsPage();
   } else {
@@ -804,6 +833,356 @@ function getFoodServings(foodId) {
   return Math.min(20, Math.max(0.05, Number(appState.foodServings[foodId]) || 1));
 }
 
+function getPairingFoods() {
+  return appState.selectedPairingFoods.map(getFood).filter(Boolean);
+}
+
+function getFoodSearchText(food) {
+  return [
+    food.name,
+    food.group,
+    food.serving,
+    ...(food.nutrients ?? []),
+    ...(food.tags ?? [])
+  ].join(" ").toLowerCase();
+}
+
+function foodHas(food, terms) {
+  const text = getFoodSearchText(food);
+  return terms.some((term) => text.includes(term));
+}
+
+function getFilteredPairingFoods() {
+  const query = appState.pairingSearch.trim().toLowerCase();
+  return FOODS.filter((food) => !query || getFoodSearchText(food).includes(query)).slice(0, 72);
+}
+
+function getPairingTotals(foods) {
+  return foods.reduce((totals, food) => ({
+    calories: totals.calories + food.calories,
+    protein: totals.protein + food.protein,
+    carbs: totals.carbs + food.carbs,
+    fat: totals.fat + food.fat,
+    fiber: totals.fiber + food.fiber,
+    addedSugar: totals.addedSugar + (food.addedSugar ?? 0)
+  }), { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, addedSugar: 0 });
+}
+
+function clampScore(value) {
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+function scoreLabel(score) {
+  if (score >= 78) return "strong";
+  if (score >= 58) return "moderate";
+  if (score >= 38) return "developing";
+  return "limited";
+}
+
+function scoreTone(score) {
+  if (score >= 78) return "high";
+  if (score >= 58) return "medium";
+  if (score >= 38) return "low";
+  return "quiet";
+}
+
+function joinFoodNames(foods) {
+  return foods.map((food) => food.name).join(" + ");
+}
+
+function getPairingFeatures(foods) {
+  const totals = getPairingTotals(foods);
+  const groups = new Set(foods.map((food) => food.group));
+  const has = (terms) => foods.some((food) => foodHas(food, terms));
+  const count = (terms) => foods.filter((food) => foodHas(food, terms)).length;
+  const plantProteinFoods = foods.filter((food) => foodHas(food, ["plant-protein", "lentil", "beans", "chickpeas", "tofu", "tempeh", "edamame"]));
+  const grainFoods = foods.filter((food) => food.group === "grains" || foodHas(food, ["whole-grain"]));
+  const animalProteinFoods = foods.filter((food) => food.group === "protein" && !foodHas(food, ["plant-protein", "tofu", "tempeh", "edamame", "lentil", "beans", "chickpeas"]));
+  const phytateFoods = foods.filter((food) => food.group === "grains" || foodHas(food, ["beans", "lentils", "chickpeas", "seeds", "almonds", "walnuts", "whole-grain", "plant-protein"]));
+  const prepMitigation = ["soaked", "fermented", "acid", "cooked"].includes(appState.pairingPrep);
+  const acidPresent = appState.pairingPrep === "acid" || has(["citric acid", "citrus", "lemon", "lime", "vinegar"]);
+
+  return {
+    totals,
+    groupCount: groups.size,
+    hasVitaminC: has(["vitamin c", "citrus"]),
+    hasAcid: acidPresent,
+    hasPlantIron: has(["plant-iron", "iron"]),
+    hasHemeIron: has(["lean beef", "beef", "turkey", "chicken", "sardines", "tuna", "shrimp"]),
+    hasCalcium: has(["calcium"]),
+    hasVitaminD: has(["vitamin d"]),
+    hasZinc: has(["zinc"]),
+    hasFat: totals.fat >= 5 || has(["healthy-fat", "monounsaturated", "omega-3", "olive oil", "avocado", "nuts", "seeds"]),
+    hasFatSoluble: has(["vitamin a", "vitamin d", "vitamin e", "vitamin k", "beta carotene", "lycopene", "carotenoids"]),
+    hasPrebiotic: has(["prebiotic", "pectin", "beta-glucan", "fiber"]),
+    hasProbiotic: has(["probiotic", "kefir", "yogurt"]),
+    hasPolyphenols: has(["polyphenols", "anthocyanins", "flavonoids", "quercetin", "rutin", "lignans", "curcumin", "piperine", "gingerols", "cinnamaldehyde", "eugenol", "rosmarinic"]),
+    hasOmega3: has(["omega-3", "ala omega-3"]),
+    hasSpiceBioactive: has(["curcumin", "piperine", "capsaicin", "gingerols", "cinnamaldehyde", "eugenol", "carvacrol", "thymol", "safranal", "crocin"]),
+    hasTurmeric: has(["turmeric", "curcumin"]),
+    hasBlackPepper: has(["black pepper", "piperine"]),
+    hasTomato: has(["tomatoes", "lycopene"]),
+    hasOliveOil: has(["olive oil", "olive-oil"]),
+    vitaminCFoods: count(["vitamin c", "citrus"]),
+    polyphenolFoods: count(["polyphenols", "anthocyanins", "flavonoids", "quercetin", "rutin", "lignans", "curcumin", "piperine", "gingerols", "cinnamaldehyde", "eugenol"]),
+    plantProteinFoods,
+    grainFoods,
+    animalProteinFoods,
+    phytateFoods,
+    prepMitigation
+  };
+}
+
+function getPairingAnalysis(foods) {
+  const features = getPairingFeatures(foods);
+  const { totals } = features;
+  const mealCountBonus = foods.length >= 2 ? 8 : 0;
+  const orderBonus = appState.pairingOrder === "fiberFirst" ? 8 : appState.pairingOrder === "carbsFirst" ? -8 : 0;
+  const carbLoad = totals.carbs + totals.addedSugar;
+  const carbBuffers = totals.fiber * 4 + totals.protein * 1.4 + totals.fat * 1.1 + orderBonus;
+  const complementaryPlants = features.plantProteinFoods.length > 0 && features.grainFoods.length > 0;
+  const proteinScore = totals.protein < 5
+    ? 18 + totals.protein * 4
+    : 34 + Math.min(totals.protein * 1.5, 32)
+      + (features.animalProteinFoods.length ? 18 : 0)
+      + (complementaryPlants ? 18 : 0);
+  const absorptionScore = 28 + mealCountBonus
+    + (features.hasPlantIron && (features.hasVitaminC || features.hasAcid) ? 24 : 0)
+    + (features.hasCalcium && features.hasVitaminD ? 18 : 0)
+    + (features.hasFatSoluble && features.hasFat ? 18 : 0)
+    + (features.hasHemeIron ? 8 : 0)
+    + (features.phytateFoods.length && !features.prepMitigation && !features.hasVitaminC ? -12 : 0);
+  const digestionScore = 26 + Math.min(totals.fiber * 3.5, 26) + Math.min(totals.protein * 0.8, 20) + Math.min(totals.fat * 1.1, 18) + orderBonus;
+  const bloodSugarScore = carbLoad <= 8
+    ? 76
+    : 34 + Math.min(carbBuffers, 44) - Math.max(0, totals.addedSugar - 8) * 1.6;
+  const hormoneScore = 30 + Math.min(totals.protein * 1.2, 26) + Math.min(totals.fiber * 2.4, 22) + Math.min(totals.fat * 0.9, 16) - Math.max(0, totals.addedSugar - 8) * 1.8;
+  const gutScore = 25 + Math.min(totals.fiber * 3.2, 30) + (features.hasPrebiotic ? 14 : 0) + (features.hasProbiotic ? 16 : 0) + Math.min(features.polyphenolFoods * 6, 18) + Math.min(features.groupCount * 3, 12);
+  const antioxidantScore = 22 + Math.min(features.polyphenolFoods * 10, 36) + Math.min(features.vitaminCFoods * 12, 24) + (features.hasFat && features.hasFatSoluble ? 10 : 0) + (features.hasSpiceBioactive ? 10 : 0);
+  const antiNutrientScore = features.phytateFoods.length === 0
+    ? 72
+    : 30 + (features.prepMitigation ? 24 : 0) + (features.hasVitaminC || features.hasAcid ? 18 : 0) + (features.hasHemeIron ? 8 : 0);
+  const matrixScore = 28 + Math.min(features.groupCount * 9, 28) + Math.min(foods.filter((food) => food.group !== "sweeteners").length * 5, 20) + (features.hasFat && (features.hasFatSoluble || features.hasPolyphenols) ? 14 : 0) + (appState.pairingPrep === "cooked" ? 6 : 0);
+  const immuneScore = 24 + (features.hasOmega3 ? 18 : 0) + (features.hasVitaminC ? 16 : 0) + (features.hasProbiotic ? 14 : 0) + Math.min(features.polyphenolFoods * 6, 18) + Math.min(totals.fiber * 1.2, 12) - Math.max(0, totals.addedSugar - 12);
+  const bioactiveScore = 22 + Math.min(features.polyphenolFoods * 7, 26) + (features.hasTurmeric && features.hasBlackPepper ? 20 : 0) + (features.hasTurmeric && features.hasFat ? 12 : 0) + (features.hasTomato && features.hasOliveOil ? 18 : 0) + (features.hasPrebiotic && features.hasProbiotic ? 16 : 0) + (features.hasPlantIron && features.hasVitaminC ? 10 : 0);
+
+  const scores = {
+    absorption: clampScore(absorptionScore),
+    digestion: clampScore(digestionScore),
+    protein: clampScore(proteinScore),
+    bloodSugar: clampScore(bloodSugarScore),
+    hormones: clampScore(hormoneScore),
+    microbiome: clampScore(gutScore),
+    antioxidants: clampScore(antioxidantScore),
+    antiNutrients: clampScore(antiNutrientScore),
+    matrix: clampScore(matrixScore),
+    immune: clampScore(immuneScore),
+    bioactives: clampScore(bioactiveScore)
+  };
+
+  return {
+    foods,
+    features,
+    totals,
+    scores,
+    overall: clampScore(Object.values(scores).reduce((sum, score) => sum + score, 0) / Object.values(scores).length)
+  };
+}
+
+function mechanismCards(analysis) {
+  const { features, totals, scores } = analysis;
+  const cards = [
+    {
+      id: "absorption",
+      title: "Nutrient absorption",
+      score: scores.absorption,
+      body: features.hasPlantIron && (features.hasVitaminC || features.hasAcid)
+        ? "Vitamin C or acidity can help keep non-heme iron easier to absorb from plant foods."
+        : "Pair vitamin C-rich foods or acid with plant iron, and fat with fat-soluble nutrients.",
+      test: "Try adding citrus, bell pepper, tomatoes, or a small amount of healthy fat and watch this score change."
+    },
+    {
+      id: "digestion",
+      title: "Digestion pace",
+      score: scores.digestion,
+      body: "Fiber, protein, and fat can slow stomach emptying and make the meal move more gradually through the gut.",
+      test: "Compare a carb-only food with the same food plus yogurt, nuts, beans, avocado, or olive oil."
+    },
+    {
+      id: "protein",
+      title: "Protein quality",
+      score: scores.protein,
+      body: features.animalProteinFoods.length
+        ? "Animal proteins usually provide a complete amino acid pattern; pairing them with plants adds fiber and micronutrients."
+        : "Grain plus legume or seed pairings can improve the amino acid spread of plant meals.",
+      test: "Pair beans or lentils with rice, pita, corn tortillas, quinoa, seeds, or dairy and compare the protein score."
+    },
+    {
+      id: "bloodSugar",
+      title: "Blood sugar regulation",
+      score: scores.bloodSugar,
+      body: carbLoadDescription(totals, appState.pairingOrder),
+      test: "Use the meal-order control to compare mixed meal, fiber first, and carbs first patterns."
+    },
+    {
+      id: "hormones",
+      title: "Hormonal responses",
+      score: scores.hormones,
+      body: "Protein, fiber, and fat can support satiety signals and reduce the need for a sharp insulin response to isolated carbohydrate.",
+      test: "Add protein or fat to a fruit, grain, or sweetener and compare the satiety and insulin-demand estimate."
+    },
+    {
+      id: "microbiome",
+      title: "Gut microbiome effects",
+      score: scores.microbiome,
+      body: features.hasPrebiotic && features.hasProbiotic
+        ? "This pairing combines fermentable fibers with probiotic foods, a useful prebiotic-plus-probiotic pattern."
+        : "Fiber, resistant starch, prebiotics, fermented foods, and polyphenol variety can support microbial diversity.",
+      test: "Try adding kefir or yogurt to oats, berries, chia, flaxseed, apples, onions, asparagus, or legumes."
+    },
+    {
+      id: "antioxidants",
+      title: "Antioxidant interactions",
+      score: scores.antioxidants,
+      body: "Colorful plants and spices bring different antioxidant families; pairing colors usually broadens the compound mix.",
+      test: "Add berries, leafy greens, tomatoes, herbs, spices, tea, or citrus and compare the antioxidant score."
+    },
+    {
+      id: "antiNutrients",
+      title: "Anti-nutrient reduction",
+      score: scores.antiNutrients,
+      body: features.phytateFoods.length
+        ? "Grains, legumes, nuts, and seeds can contain phytates. Soaking, fermentation, cooking, and vitamin C pairings can reduce their mineral-binding impact."
+        : "This meal has fewer obvious phytate-heavy foods, so anti-nutrient pressure is lower.",
+      test: "Use the preparation control to compare standard prep with soaked, fermented, cooked, or acid-added versions."
+    },
+    {
+      id: "matrix",
+      title: "Food matrix effects",
+      score: scores.matrix,
+      body: "The physical food matrix changes how nutrients are released. Whole foods with fiber, protein, water, and fat often behave differently than isolated nutrients.",
+      test: "Compare whole fruit with honey, or a whole-grain meal with a refined/sweet pairing."
+    },
+    {
+      id: "immune",
+      title: "Immune and inflammatory support",
+      score: scores.immune,
+      body: "Omega-3 fats, vitamin C, probiotics, fiber, and polyphenols can support immune resilience and inflammatory balance in different ways.",
+      test: "Add salmon, sardines, berries, leafy greens, citrus, kefir, yogurt, flaxseed, chia, or herbs."
+    },
+    {
+      id: "bioactives",
+      title: "Bioactive compound synergy",
+      score: scores.bioactives,
+      body: bioactiveDescription(features),
+      test: "Try turmeric plus black pepper and fat, tomatoes plus olive oil, or probiotic foods plus prebiotic fiber."
+    }
+  ];
+  const goalOrder = {
+    absorption: ["absorption", "antiNutrients", "matrix"],
+    bloodSugar: ["bloodSugar", "digestion", "hormones"],
+    gut: ["microbiome", "matrix", "immune"],
+    recovery: ["protein", "bloodSugar", "immune"],
+    antiNutrients: ["antiNutrients", "absorption", "matrix"],
+    bioactives: ["bioactives", "antioxidants", "immune"]
+  }[appState.pairingGoal] ?? [];
+  return cards.sort((a, b) => {
+    const aIndex = goalOrder.includes(a.id) ? goalOrder.indexOf(a.id) : 99;
+    const bIndex = goalOrder.includes(b.id) ? goalOrder.indexOf(b.id) : 99;
+    return aIndex - bIndex || b.score - a.score;
+  });
+}
+
+function carbLoadDescription(totals, order) {
+  if (totals.carbs <= 8) return "This pairing is naturally low in carbohydrate, so the glucose estimate is mainly shaped by protein, fat, and fiber.";
+  if (order === "fiberFirst") return "Starting with fiber-rich foods may flatten the expected glucose rise compared with eating carbohydrate first.";
+  if (order === "carbsFirst") return "Eating carbohydrate first can make the expected glucose rise sharper when the meal is not buffered by enough fiber, protein, or fat.";
+  return "Protein, fat, and fiber can buffer carbohydrate digestion and may support a steadier glucose curve.";
+}
+
+function bioactiveDescription(features) {
+  if (features.hasTurmeric && features.hasBlackPepper && features.hasFat) {
+    return "Turmeric, black pepper, and fat create a classic bioactive stack: piperine and fat can improve curcumin availability.";
+  }
+  if (features.hasTomato && features.hasOliveOil) {
+    return "Tomatoes plus olive oil are a useful matrix pairing because fat can support carotenoid availability.";
+  }
+  if (features.hasPrebiotic && features.hasProbiotic) {
+    return "Prebiotic fiber plus probiotic food creates a synbiotic-style pairing for gut ecology.";
+  }
+  return "Bioactive synergy rises when herbs, spices, colorful plants, healthy fats, fermented foods, and complementary nutrients appear together.";
+}
+
+function digestiveJourney(analysis) {
+  const { totals, features, scores } = analysis;
+  return [
+    {
+      phase: "Mouth and stomach",
+      title: totals.fiber + totals.protein + totals.fat > 28 ? "Slower release" : "Faster release",
+      body: "Food structure, chewing, protein, fat, and fiber influence how quickly the meal leaves the stomach."
+    },
+    {
+      phase: "Small intestine",
+      title: scores.absorption >= 70 ? "Better absorption setup" : "Absorption can be improved",
+      body: features.hasFat && features.hasFatSoluble
+        ? "Fat-soluble compounds have a fat source available for uptake."
+        : "Add fat for carotenoids or vitamins A, D, E, and K; add vitamin C or acid for plant iron."
+    },
+    {
+      phase: "Bloodstream",
+      title: scores.bloodSugar >= 70 ? "Steadier entry" : "Sharper entry possible",
+      body: carbLoadDescription(totals, appState.pairingOrder)
+    },
+    {
+      phase: "Colon and microbiome",
+      title: scores.microbiome >= 70 ? "Microbe-friendly" : "Add fermentable diversity",
+      body: features.hasPrebiotic || totals.fiber >= 8
+        ? "Fiber and plant compounds can become fuel for gut microbes."
+        : "Add legumes, oats, berries, apples, onions, asparagus, chia, flaxseed, or fermented foods."
+    }
+  ];
+}
+
+function pairingTestIdeas(analysis) {
+  const { features, totals } = analysis;
+  return [
+    {
+      title: "Absorption A/B test",
+      body: features.hasPlantIron
+        ? "Compare this meal as-is against the same meal with citrus, bell pepper, tomatoes, or acid-added prep."
+        : "Add a plant-iron food such as lentils, beans, tofu, spinach, or pumpkin seeds, then pair it with vitamin C."
+    },
+    {
+      title: "Glucose curve test",
+      body: totals.carbs > 10
+        ? "Compare carbs first with fiber first. Then add protein or fat and watch the blood sugar score shift."
+        : "Add a grain, fruit, potato, or honey to see how fiber, protein, and fat buffer carbohydrate movement."
+    },
+    {
+      title: "Microbiome test",
+      body: features.hasProbiotic
+        ? "Add prebiotic fiber such as oats, berries, apple, onions, asparagus, lentils, chia, or flaxseed."
+        : "Add yogurt or kefir, then pair it with a fiber-rich plant food to test a synbiotic-style meal."
+    },
+    {
+      title: "Bioactive test",
+      body: "Try tomato plus olive oil, turmeric plus black pepper plus fat, or herbs and spices with colorful plants."
+    }
+  ];
+}
+
+function pairingSelectButton(food) {
+  const group = getFoodGroup(food.group);
+  const selected = appState.selectedPairingFoods.includes(food.id);
+  return `
+    <button class="pairing-food-button ${selected ? "is-selected" : ""}" type="button" data-pairing-food="${food.id}" style="--food-color: ${group.theme}">
+      <span class="food-dot"></span>
+      <strong>${food.name}</strong>
+      <small>${group.label} - ${food.calories} cal - ${food.protein}g protein - ${food.fiber}g fiber</small>
+    </button>
+  `;
+}
+
 function saveFoodPlate() {
   try {
     localStorage.setItem(FOOD_PLATE_KEY, JSON.stringify({
@@ -986,6 +1365,277 @@ function foodCardMarkup(food, selected = false) {
       </button>
     </article>
   `;
+}
+
+function renderPairingsPage() {
+  const pageRoot = app.querySelector("#pageRoot");
+  const pairingFoods = getPairingFoods();
+  const filteredFoods = getFilteredPairingFoods();
+  const analysis = getPairingAnalysis(pairingFoods);
+  const cards = mechanismCards(analysis);
+  const goal = PAIRING_GOALS.find((item) => item.id === appState.pairingGoal) ?? PAIRING_GOALS[0];
+  const primaryCards = cards.slice(0, 4);
+  const secondaryCards = cards.slice(4);
+  const journey = digestiveJourney(analysis);
+  const tests = pairingTestIdeas(analysis);
+  const selectedIds = pairingFoods.map((food) => food.id);
+
+  pageRoot.innerHTML = `
+    <section class="pairings-page wellness-page">
+      <div class="wellness-hero pairings-hero">
+        <div>
+          <p>Food Pairing Lab</p>
+          <h1>Test how foods work together</h1>
+          <p class="hero-copy">Select foods, change preparation and meal order, and compare how the pairing may affect absorption, digestion, protein quality, blood sugar, gut ecology, and bioactive synergy.</p>
+        </div>
+        <div class="progress-card">
+          <span>${analysis.overall}</span>
+          <strong>${scoreLabel(analysis.overall)} pairing score</strong>
+        </div>
+      </div>
+
+      <div class="pairing-lab-layout">
+        <aside class="pairing-builder-panel">
+          <section class="pairing-tool-card">
+            <div class="panel-heading">
+              <div>
+                <p>Build a pairing</p>
+                <h2>${pairingFoods.length} selected</h2>
+              </div>
+              <button class="text-button" type="button" id="clearPairingFoods" ${pairingFoods.length === 0 ? "disabled" : ""}>Clear</button>
+            </div>
+            <label class="search-field">
+              <span>Search foods, nutrients, or compounds</span>
+              <input id="pairingSearch" type="search" value="${escapeHtml(appState.pairingSearch)}" placeholder="Try iron, citrus, yogurt, turmeric..." />
+            </label>
+            <div class="selected-pairing-chips" aria-label="Selected pairing foods">
+              ${pairingFoods.length
+                ? pairingFoods.map((food) => `<button type="button" data-remove-pairing-food="${food.id}">${food.name}</button>`).join("")
+                : `<p class="food-empty-state">Choose at least two foods to compare pairing effects.</p>`}
+            </div>
+            <div class="pairing-food-list">
+              ${filteredFoods.map((food) => pairingSelectButton(food)).join("")}
+            </div>
+          </section>
+        </aside>
+
+        <main class="pairing-results-panel">
+          <section class="pairing-tool-card">
+            <div class="panel-heading">
+              <div>
+                <p>Current meal question</p>
+                <h2>${pairingFoods.length ? joinFoodNames(pairingFoods) : "No foods selected"}</h2>
+              </div>
+            </div>
+            <div class="pairing-control-grid">
+              <label>
+                <span>Goal to test</span>
+                <select id="pairingGoal">
+                  ${PAIRING_GOALS.map((item) => `<option value="${item.id}" ${item.id === appState.pairingGoal ? "selected" : ""}>${item.label}</option>`).join("")}
+                </select>
+              </label>
+              <label>
+                <span>Preparation</span>
+                <select id="pairingPrep">
+                  ${PAIRING_PREP_OPTIONS.map((item) => `<option value="${item.id}" ${item.id === appState.pairingPrep ? "selected" : ""}>${item.label}</option>`).join("")}
+                </select>
+              </label>
+              <label>
+                <span>Meal order</span>
+                <select id="pairingOrder">
+                  ${PAIRING_ORDER_OPTIONS.map((item) => `<option value="${item.id}" ${item.id === appState.pairingOrder ? "selected" : ""}>${item.label}</option>`).join("")}
+                </select>
+              </label>
+            </div>
+            <p class="pairing-goal-note">Testing for <strong>${goal.label.toLowerCase()}</strong>: ${goal.cue}. These scores are educational estimates, not medical predictions.</p>
+            <div class="pairing-macro-strip">
+              <article><span>${formatNutrientNumber(analysis.totals.calories)}</span><p>calories</p></article>
+              <article><span>${formatNutrientNumber(analysis.totals.protein)}g</span><p>protein</p></article>
+              <article><span>${formatNutrientNumber(analysis.totals.carbs)}g</span><p>carbs</p></article>
+              <article><span>${formatNutrientNumber(analysis.totals.fat)}g</span><p>fat</p></article>
+              <article><span>${formatNutrientNumber(analysis.totals.fiber)}g</span><p>fiber</p></article>
+            </div>
+          </section>
+
+          <section class="pairing-score-grid">
+            ${primaryCards.map((card) => `
+              <article class="pairing-score-card is-${scoreTone(card.score)}">
+                <div>
+                  <p>${scoreLabel(card.score)}</p>
+                  <h3>${card.title}</h3>
+                </div>
+                <span>${card.score}</span>
+                <div class="pairing-score-bar"><i style="width: ${card.score}%"></i></div>
+                <p>${card.body}</p>
+                <small>${card.test}</small>
+              </article>
+            `).join("")}
+          </section>
+
+          <section class="pairing-tool-card">
+            <div class="panel-heading">
+              <div>
+                <p>Movement through the body</p>
+                <h2>Meal pathway</h2>
+              </div>
+            </div>
+            <div class="digestive-journey">
+              ${journey.map((step, index) => `
+                <article>
+                  <span>${index + 1}</span>
+                  <div>
+                    <p>${step.phase}</p>
+                    <h3>${step.title}</h3>
+                    <small>${step.body}</small>
+                  </div>
+                </article>
+              `).join("")}
+            </div>
+          </section>
+
+          <section class="pairing-tool-card">
+            <div class="panel-heading">
+              <div>
+                <p>All mechanisms</p>
+                <h2>What changed and why</h2>
+              </div>
+            </div>
+            <div class="mechanism-list">
+              ${secondaryCards.map((card) => `
+                <article>
+                  <div>
+                    <strong>${card.title}</strong>
+                    <p>${card.body}</p>
+                    <small>${card.test}</small>
+                  </div>
+                  <span>${card.score}</span>
+                </article>
+              `).join("")}
+            </div>
+          </section>
+        </main>
+
+        <aside class="pairing-test-panel">
+          <section class="pairing-tool-card">
+            <div class="panel-heading">
+              <div>
+                <p>Preset experiments</p>
+                <h2>Try a known pattern</h2>
+              </div>
+            </div>
+            <div class="pairing-preset-list">
+              ${FOOD_PAIRINGS.map((pairing) => {
+                const active = pairing.foods.every((id) => selectedIds.includes(id)) && pairing.foods.length === selectedIds.length;
+                return `
+                  <button class="${active ? "is-active" : ""}" type="button" data-pairing-preset="${pairing.id}">
+                    <strong>${pairing.name}</strong>
+                    <span>${pairing.reason}</span>
+                  </button>
+                `;
+              }).join("")}
+            </div>
+          </section>
+
+          <section class="pairing-tool-card">
+            <div class="panel-heading">
+              <div>
+                <p>How to test it</p>
+                <h2>Pairing experiments</h2>
+              </div>
+            </div>
+            <div class="pairing-experiment-list">
+              ${tests.map((test) => `
+                <article>
+                  <h3>${test.title}</h3>
+                  <p>${test.body}</p>
+                </article>
+              `).join("")}
+            </div>
+            <div class="pairing-action-row">
+              <button class="secondary-button" type="button" id="usePairingAsPlate" ${pairingFoods.length === 0 ? "disabled" : ""}>Use as food plate</button>
+              <button class="secondary-button" type="button" id="importPlatePairing" ${appState.selectedFoods.length === 0 ? "disabled" : ""}>Import current plate</button>
+            </div>
+          </section>
+
+          <section class="pairing-tool-card pairing-source-card">
+            <div class="panel-heading">
+              <div>
+                <p>Reference anchors</p>
+                <h2>What this is based on</h2>
+              </div>
+            </div>
+            <p>Use this page to learn patterns. Actual responses vary by portion size, health status, medications, gut microbiome, training load, and total diet.</p>
+            <div>
+              <a href="https://fdc.nal.usda.gov/" target="_blank" rel="noreferrer">USDA FoodData Central</a>
+              <a href="https://ods.od.nih.gov/factsheets/Iron-HealthProfessional/" target="_blank" rel="noreferrer">NIH iron absorption</a>
+              <a href="https://ods.od.nih.gov/factsheets/Zinc-HealthProfessional/" target="_blank" rel="noreferrer">NIH zinc and phytates</a>
+              <a href="https://ods.od.nih.gov/factsheets/VitaminD-HealthProfessional/" target="_blank" rel="noreferrer">NIH vitamin D and calcium</a>
+            </div>
+          </section>
+        </aside>
+      </div>
+      <p class="safety-note">General nutrition education only. This page cannot diagnose conditions, predict individual glucose response, replace food labels, or replace care from a clinician or registered dietitian.</p>
+    </section>
+  `;
+
+  pageRoot.querySelector("#pairingSearch").addEventListener("input", (event) => {
+    appState.pairingSearch = event.target.value;
+    renderPairingsPage();
+    const search = pageRoot.querySelector("#pairingSearch");
+    search.focus();
+    search.setSelectionRange(search.value.length, search.value.length);
+  });
+
+  ["pairingGoal", "pairingPrep", "pairingOrder"].forEach((id) => {
+    pageRoot.querySelector(`#${id}`).addEventListener("change", (event) => {
+      appState[id] = event.target.value;
+      renderPairingsPage();
+    });
+  });
+
+  pageRoot.querySelectorAll("[data-pairing-food]").forEach((button) => {
+    button.addEventListener("click", () => {
+      if (appState.selectedPairingFoods.includes(button.dataset.pairingFood)) {
+        appState.selectedPairingFoods = appState.selectedPairingFoods.filter((id) => id !== button.dataset.pairingFood);
+      } else {
+        appState.selectedPairingFoods = [...appState.selectedPairingFoods, button.dataset.pairingFood].slice(-10);
+      }
+      renderPairingsPage();
+    });
+  });
+
+  pageRoot.querySelectorAll("[data-remove-pairing-food]").forEach((button) => {
+    button.addEventListener("click", () => {
+      appState.selectedPairingFoods = appState.selectedPairingFoods.filter((id) => id !== button.dataset.removePairingFood);
+      renderPairingsPage();
+    });
+  });
+
+  pageRoot.querySelectorAll("[data-pairing-preset]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const pairing = FOOD_PAIRINGS.find((item) => item.id === button.dataset.pairingPreset);
+      if (!pairing) return;
+      appState.selectedPairingFoods = pairing.foods;
+      appState.pairingSearch = "";
+      renderPairingsPage();
+    });
+  });
+
+  pageRoot.querySelector("#clearPairingFoods").addEventListener("click", () => {
+    appState.selectedPairingFoods = [];
+    renderPairingsPage();
+  });
+
+  pageRoot.querySelector("#usePairingAsPlate").addEventListener("click", () => {
+    appState.selectedFoods = appState.selectedPairingFoods.filter((id) => getFood(id));
+    appState.foodServings = Object.fromEntries(appState.selectedFoods.map((id) => [id, appState.foodServings[id] ?? 1]));
+    saveFoodPlate();
+  });
+
+  pageRoot.querySelector("#importPlatePairing").addEventListener("click", () => {
+    appState.selectedPairingFoods = appState.selectedFoods.filter((id) => getFood(id));
+    renderPairingsPage();
+  });
 }
 
 function renderFoodPage() {
