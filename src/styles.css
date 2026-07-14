@@ -1443,6 +1443,345 @@ h4 {
   margin-top: 10px;
 }
 
+.pairing-lab-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.82fr) minmax(420px, 1.28fr) minmax(300px, 0.9fr);
+  align-items: start;
+  gap: 16px;
+  margin-top: 22px;
+}
+
+.pairing-builder-panel,
+.pairing-results-panel,
+.pairing-test-panel {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+
+.pairing-builder-panel {
+  position: sticky;
+  top: 88px;
+  max-height: calc(100vh - 108px);
+  overflow: auto;
+}
+
+.pairing-tool-card,
+.pairing-score-card {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.pairing-tool-card {
+  padding: 16px;
+}
+
+.selected-pairing-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.selected-pairing-chips button {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid #d8e0da;
+  border-radius: 999px;
+  background: #f7faf8;
+  color: #26342e;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.pairing-food-list,
+.pairing-preset-list,
+.pairing-experiment-list,
+.mechanism-list,
+.digestive-journey {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.pairing-food-list {
+  max-height: 58vh;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.pairing-food-button {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 13px minmax(0, 1fr);
+  align-items: center;
+  gap: 4px 10px;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #dce4df;
+  border-left: 4px solid var(--food-color);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #26342e;
+  text-align: left;
+}
+
+.pairing-food-button .food-dot {
+  grid-row: span 2;
+  width: 9px;
+  height: 36px;
+  background: var(--food-color);
+}
+
+.pairing-food-button strong,
+.pairing-preset-list strong {
+  overflow-wrap: anywhere;
+}
+
+.pairing-food-button small,
+.pairing-preset-list span,
+.pairing-score-card small,
+.mechanism-list small,
+.digestive-journey small,
+.pairing-source-card p {
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.pairing-food-button:hover,
+.pairing-food-button.is-selected,
+.pairing-preset-list button:hover,
+.pairing-preset-list button.is-active {
+  border-color: var(--food-color, var(--green));
+  background: color-mix(in srgb, var(--food-color, var(--green)) 10%, #ffffff);
+}
+
+.pairing-control-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.pairing-control-grid label {
+  display: grid;
+  gap: 7px;
+  color: #3d4742;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.pairing-control-grid select {
+  min-height: 40px;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #20242a;
+  padding: 0 10px;
+}
+
+.pairing-goal-note {
+  margin: 12px 0 0;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+
+.pairing-macro-strip {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.pairing-macro-strip article {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #dfe6e1;
+  border-radius: 8px;
+  background: #f8faf9;
+}
+
+.pairing-macro-strip span {
+  display: block;
+  color: #26342e;
+  font-size: 1.08rem;
+  font-weight: 900;
+}
+
+.pairing-macro-strip p {
+  margin: 4px 0 0;
+  color: var(--ink-soft);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.pairing-score-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.pairing-score-card {
+  display: grid;
+  gap: 10px;
+  padding: 15px;
+  border-top: 5px solid #d4ddd7;
+}
+
+.pairing-score-card.is-high {
+  border-top-color: var(--green);
+}
+
+.pairing-score-card.is-medium {
+  border-top-color: var(--sun);
+}
+
+.pairing-score-card.is-low {
+  border-top-color: #d88324;
+}
+
+.pairing-score-card.is-quiet {
+  border-top-color: #bd4848;
+}
+
+.pairing-score-card > span {
+  justify-self: start;
+  color: #26342e;
+  font-size: 1.75rem;
+  font-weight: 950;
+}
+
+.pairing-score-card > div:first-child p {
+  margin: 0 0 4px;
+  color: var(--green-dark);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.pairing-score-card > p,
+.mechanism-list p,
+.pairing-experiment-list p {
+  margin: 0;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+
+.pairing-score-bar {
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e4eae6;
+}
+
+.pairing-score-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--green);
+}
+
+.digestive-journey article,
+.mechanism-list article {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  padding: 13px;
+  border: 1px solid #dfe6e1;
+  border-radius: 8px;
+  background: #f9fbfa;
+}
+
+.digestive-journey article > span,
+.mechanism-list article > span {
+  width: 30px;
+  height: 30px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #26342e;
+  color: #ffffff;
+  font-size: 0.84rem;
+  font-weight: 900;
+}
+
+.digestive-journey p {
+  margin: 0 0 4px;
+  color: var(--green-dark);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.mechanism-list article {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.mechanism-list article > span {
+  background: var(--sun);
+  color: #26342e;
+}
+
+.mechanism-list strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #26342e;
+}
+
+.mechanism-list small {
+  display: block;
+  margin-top: 6px;
+}
+
+.pairing-preset-list button {
+  display: grid;
+  gap: 5px;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #dfe6e1;
+  border-left: 4px solid var(--green);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #26342e;
+  text-align: left;
+}
+
+.pairing-experiment-list article {
+  padding: 13px;
+  border: 1px solid #dfe6e1;
+  border-radius: 8px;
+  background: #f8faf9;
+}
+
+.pairing-experiment-list h3 {
+  margin-bottom: 6px;
+}
+
+.pairing-action-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.pairing-source-card div:last-child {
+  display: grid;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.pairing-source-card a {
+  color: #275d92;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
 .calorie-form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1848,6 +2187,15 @@ h4 {
     grid-template-columns: minmax(280px, 0.85fr) minmax(340px, 1.15fr);
   }
 
+  .pairing-lab-layout {
+    grid-template-columns: minmax(280px, 0.85fr) minmax(0, 1.15fr);
+  }
+
+  .pairing-test-panel {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .nutrition-panel {
     grid-column: 1 / -1;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1882,6 +2230,24 @@ h4 {
   }
 
   .food-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pairing-lab-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pairing-builder-panel {
+    position: static;
+    max-height: none;
+  }
+
+  .pairing-food-list {
+    max-height: 60vh;
+  }
+
+  .pairing-test-panel {
+    grid-column: auto;
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -2031,6 +2397,10 @@ h4 {
   .stretch-grid,
   .food-grid,
   .food-nutrient-checklist,
+  .pairing-control-grid,
+  .pairing-macro-strip,
+  .pairing-score-grid,
+  .pairing-action-row,
   .calorie-form,
   .nutrition-profile-form,
   .nutrient-targets,
