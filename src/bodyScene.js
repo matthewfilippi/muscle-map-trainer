@@ -1,6 +1,5 @@
 import * as THREE from "../node_modules/three/build/three.module.js";
 import { BODY_SYSTEMS } from "./bodySystems.js";
-import { getMuscle } from "./data.js";
 
 const systemThemes = new Map(BODY_SYSTEMS.map((system) => [system.id, system.theme]));
 const systemLabels = new Map(BODY_SYSTEMS.map((system) => [system.id, system.label]));
@@ -8,6 +7,11 @@ const systemIds = new Set(BODY_SYSTEMS.map((system) => system.id));
 
 const modelVerticalOffset = 1.06;
 const floorVerticalOffset = -3.8;
+const MUSCLE_REST_COLOR = "#969c99";
+const MUSCLE_SELECTED_COLOR = "#c9433f";
+const MUSCLE_HOVER_COLOR = "#d79528";
+const MUSCLE_CONTOUR_COLOR = "#424846";
+const TENDON_COLOR = "#dddcd5";
 
 const ANATOMY_PART_INFO = {
   skeletal: {
@@ -162,6 +166,21 @@ function makeMaterial(color, opacity = 1, roughness = 0.58) {
   });
 }
 
+function addContour(mesh, opacity = 0.2) {
+  const contour = new THREE.LineSegments(
+    new THREE.EdgesGeometry(mesh.geometry, 22),
+    new THREE.LineBasicMaterial({
+      color: MUSCLE_CONTOUR_COLOR,
+      transparent: true,
+      opacity,
+      depthWrite: false
+    })
+  );
+  contour.raycast = () => {};
+  mesh.add(contour);
+  return mesh;
+}
+
 function ellipsoid({
   name,
   muscleId,
@@ -216,6 +235,48 @@ function cylinder({
   return mesh;
 }
 
+function muscleLobe({
+  name,
+  muscleId,
+  position,
+  scale,
+  rotation = [0, 0, 0],
+  opacity = 1,
+  shape = "ellipsoid"
+}) {
+  const geometry = shape === "capsule"
+    ? new THREE.CapsuleGeometry(0.5, 1, 8, 20, 3)
+    : new THREE.SphereGeometry(1, 28, 18);
+  const mesh = new THREE.Mesh(geometry, makeMaterial(MUSCLE_REST_COLOR, opacity, 0.7));
+  mesh.name = name;
+  mesh.position.set(...position);
+  mesh.rotation.set(...rotation);
+  if (shape === "capsule") {
+    mesh.scale.set(scale[0] * 2, scale[1], scale[2] * 2);
+  } else {
+    mesh.scale.set(...scale);
+  }
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  mesh.userData.muscleId = muscleId;
+  mesh.userData.systemId = "muscular";
+  mesh.userData.baseColor = MUSCLE_REST_COLOR;
+  return addContour(mesh, shape === "capsule" ? 0.16 : 0.22);
+}
+
+function muscleDetail({ position, scale, rotation = [0, 0, 0], color = TENDON_COLOR, opacity = 0.88 }) {
+  const mesh = new THREE.Mesh(
+    new THREE.SphereGeometry(1, 20, 12),
+    makeMaterial(color, opacity, 0.78)
+  );
+  mesh.position.set(...position);
+  mesh.rotation.set(...rotation);
+  mesh.scale.set(...scale);
+  mesh.castShadow = true;
+  mesh.raycast = () => {};
+  return mesh;
+}
+
 function cylinderBetween({ name, systemId, start, end, radius = 0.025, color, opacity = 0.9 }) {
   const startVector = new THREE.Vector3(...start);
   const endVector = new THREE.Vector3(...end);
@@ -228,6 +289,20 @@ function cylinderBetween({ name, systemId, start, end, radius = 0.025, color, op
   mesh.name = name;
   mesh.position.copy(startVector.add(endVector).multiplyScalar(0.5));
   mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.normalize());
+  mesh.userData.systemId = systemId;
+  mesh.userData.baseColor = color;
+  return mesh;
+}
+
+function tubePath({ name, systemId, points, radius = 0.02, color, opacity = 0.9, radialSegments = 10 }) {
+  const vectors = points.map((point) => new THREE.Vector3(...point));
+  const curve = new THREE.CatmullRomCurve3(vectors, false, "centripetal");
+  const mesh = new THREE.Mesh(
+    new THREE.TubeGeometry(curve, Math.max(24, points.length * 10), radius, radialSegments, false),
+    makeMaterial(color, opacity, 0.68)
+  );
+  mesh.name = name;
+  mesh.castShadow = true;
   mesh.userData.systemId = systemId;
   mesh.userData.baseColor = color;
   return mesh;
@@ -395,86 +470,182 @@ export class BodyScene {
   }
 
   buildMuscularSystem() {
-    const muscleColor = (id) => getMuscle(id).color;
     const pieces = [
-      ellipsoid({ name: "Left pectoral", muscleId: "chest", position: [-0.34, 0.88, 0.43], scale: [0.38, 0.34, 0.14], color: muscleColor("chest") }),
-      ellipsoid({ name: "Right pectoral", muscleId: "chest", position: [0.34, 0.88, 0.43], scale: [0.38, 0.34, 0.14], color: muscleColor("chest") }),
-      ellipsoid({ name: "Left deltoid", muscleId: "shoulders", position: [-0.95, 0.95, 0.08], scale: [0.28, 0.36, 0.3], color: muscleColor("shoulders") }),
-      ellipsoid({ name: "Right deltoid", muscleId: "shoulders", position: [0.95, 0.95, 0.08], scale: [0.28, 0.36, 0.3], color: muscleColor("shoulders") }),
-      cylinder({ name: "Left biceps", muscleId: "biceps", position: [-1.2, 0.28, 0.18], radiusTop: 0.15, radiusBottom: 0.12, height: 0.82, color: muscleColor("biceps"), rotation: [0.08, 0, -0.17] }),
-      cylinder({ name: "Right biceps", muscleId: "biceps", position: [1.2, 0.28, 0.18], radiusTop: 0.15, radiusBottom: 0.12, height: 0.82, color: muscleColor("biceps"), rotation: [0.08, 0, 0.17] }),
-      cylinder({ name: "Left triceps", muscleId: "triceps", position: [-1.14, 0.24, -0.18], radiusTop: 0.14, radiusBottom: 0.12, height: 0.82, color: muscleColor("triceps"), rotation: [0.08, 0, -0.17] }),
-      cylinder({ name: "Right triceps", muscleId: "triceps", position: [1.14, 0.24, -0.18], radiusTop: 0.14, radiusBottom: 0.12, height: 0.82, color: muscleColor("triceps"), rotation: [0.08, 0, 0.17] }),
-      cylinder({ name: "Left forearm", muscleId: "forearms", position: [-1.34, -0.55, 0.08], radiusTop: 0.12, radiusBottom: 0.09, height: 0.88, color: muscleColor("forearms"), rotation: [0.08, 0, -0.11] }),
-      cylinder({ name: "Right forearm", muscleId: "forearms", position: [1.34, -0.55, 0.08], radiusTop: 0.12, radiusBottom: 0.09, height: 0.88, color: muscleColor("forearms"), rotation: [0.08, 0, 0.11] }),
-      cylinder({ name: "Neck column", muscleId: "neck", position: [0, 1.62, 0.02], radiusTop: 0.2, radiusBottom: 0.23, height: 0.48, color: muscleColor("neck") }),
-      ellipsoid({ name: "Front neck", muscleId: "neck", position: [0, 1.6, 0.28], scale: [0.23, 0.3, 0.12], color: muscleColor("neck") }),
-      ellipsoid({ name: "Upper traps", muscleId: "traps", position: [0, 1.34, -0.22], scale: [0.7, 0.24, 0.17], color: muscleColor("traps") }),
-      ellipsoid({ name: "Left lat", muscleId: "lats", position: [-0.46, 0.35, -0.42], scale: [0.32, 0.78, 0.16], color: muscleColor("lats") }),
-      ellipsoid({ name: "Right lat", muscleId: "lats", position: [0.46, 0.35, -0.42], scale: [0.32, 0.78, 0.16], color: muscleColor("lats") }),
-      ellipsoid({ name: "Lower back", muscleId: "lowerBack", position: [0, -0.43, -0.42], scale: [0.5, 0.44, 0.16], color: muscleColor("lowerBack") }),
-      ellipsoid({ name: "Abs upper", muscleId: "abs", position: [0, 0.35, 0.46], scale: [0.28, 0.3, 0.1], color: muscleColor("abs") }),
-      ellipsoid({ name: "Abs lower", muscleId: "abs", position: [0, -0.18, 0.45], scale: [0.25, 0.36, 0.1], color: muscleColor("abs") }),
-      ellipsoid({ name: "Left oblique", muscleId: "obliques", position: [-0.48, 0.04, 0.38], scale: [0.16, 0.52, 0.1], color: muscleColor("obliques") }),
-      ellipsoid({ name: "Right oblique", muscleId: "obliques", position: [0.48, 0.04, 0.38], scale: [0.16, 0.52, 0.1], color: muscleColor("obliques") }),
-      ellipsoid({ name: "Left glute", muscleId: "glutes", position: [-0.32, -0.88, -0.36], scale: [0.36, 0.34, 0.18], color: muscleColor("glutes") }),
-      ellipsoid({ name: "Right glute", muscleId: "glutes", position: [0.32, -0.88, -0.36], scale: [0.36, 0.34, 0.18], color: muscleColor("glutes") }),
-      cylinder({ name: "Left quad", muscleId: "quads", position: [-0.4, -1.5, 0.21], radiusTop: 0.2, radiusBottom: 0.16, height: 1.05, color: muscleColor("quads"), rotation: [0.03, 0, 0.04] }),
-      cylinder({ name: "Right quad", muscleId: "quads", position: [0.4, -1.5, 0.21], radiusTop: 0.2, radiusBottom: 0.16, height: 1.05, color: muscleColor("quads"), rotation: [0.03, 0, -0.04] }),
-      cylinder({ name: "Left hamstring", muscleId: "hamstrings", position: [-0.4, -1.5, -0.2], radiusTop: 0.18, radiusBottom: 0.14, height: 1.05, color: muscleColor("hamstrings"), rotation: [0.03, 0, 0.04] }),
-      cylinder({ name: "Right hamstring", muscleId: "hamstrings", position: [0.4, -1.5, -0.2], radiusTop: 0.18, radiusBottom: 0.14, height: 1.05, color: muscleColor("hamstrings"), rotation: [0.03, 0, -0.04] }),
-      cylinder({ name: "Left calf", muscleId: "calves", position: [-0.4, -2.6, -0.04], radiusTop: 0.13, radiusBottom: 0.1, height: 0.88, color: muscleColor("calves"), rotation: [-0.02, 0, 0.02] }),
-      cylinder({ name: "Right calf", muscleId: "calves", position: [0.4, -2.6, -0.04], radiusTop: 0.13, radiusBottom: 0.1, height: 0.88, color: muscleColor("calves"), rotation: [-0.02, 0, -0.02] }),
-      ellipsoid({ name: "Left ankle", muscleId: "feetAnkles", position: [-0.4, -3.07, -0.02], scale: [0.24, 0.17, 0.23], color: muscleColor("feetAnkles") }),
-      ellipsoid({ name: "Right ankle", muscleId: "feetAnkles", position: [0.4, -3.07, -0.02], scale: [0.24, 0.17, 0.23], color: muscleColor("feetAnkles") }),
-      ellipsoid({ name: "Left foot", muscleId: "feetAnkles", position: [-0.4, -3.25, 0.28], scale: [0.36, 0.14, 0.58], color: muscleColor("feetAnkles"), rotation: [0.08, 0, 0.02] }),
-      ellipsoid({ name: "Right foot", muscleId: "feetAnkles", position: [0.4, -3.25, 0.28], scale: [0.36, 0.14, 0.58], color: muscleColor("feetAnkles"), rotation: [0.08, 0, -0.02] }),
-      ellipsoid({ name: "Left toe box", muscleId: "feetAnkles", position: [-0.4, -3.25, 0.66], scale: [0.3, 0.09, 0.2], color: muscleColor("feetAnkles"), rotation: [0.04, 0, 0.02] }),
-      ellipsoid({ name: "Right toe box", muscleId: "feetAnkles", position: [0.4, -3.25, 0.66], scale: [0.3, 0.09, 0.2], color: muscleColor("feetAnkles"), rotation: [0.04, 0, -0.02] }),
-      ellipsoid({ name: "Left foot click pad", muscleId: "feetAnkles", position: [-0.4, -3.2, 0.32], scale: [0.48, 0.24, 0.78], color: muscleColor("feetAnkles"), opacity: 0.22 }),
-      ellipsoid({ name: "Right foot click pad", muscleId: "feetAnkles", position: [0.4, -3.2, 0.32], scale: [0.48, 0.24, 0.78], color: muscleColor("feetAnkles"), opacity: 0.22 })
+      muscleLobe({ name: "Left pectoralis major, clavicular head", muscleId: "chest", position: [-0.31, 1.07, 0.49], scale: [0.36, 0.16, 0.105], rotation: [0, 0.08, -0.1] }),
+      muscleLobe({ name: "Right pectoralis major, clavicular head", muscleId: "chest", position: [0.31, 1.07, 0.49], scale: [0.36, 0.16, 0.105], rotation: [0, -0.08, 0.1] }),
+      muscleLobe({ name: "Left pectoralis major, sternal head", muscleId: "chest", position: [-0.32, 0.78, 0.5], scale: [0.39, 0.2, 0.115], rotation: [0, 0.05, 0.03] }),
+      muscleLobe({ name: "Right pectoralis major, sternal head", muscleId: "chest", position: [0.32, 0.78, 0.5], scale: [0.39, 0.2, 0.115], rotation: [0, -0.05, -0.03] }),
+
+      muscleLobe({ name: "Left anterior deltoid", muscleId: "shoulders", position: [-0.86, 1.02, 0.23], scale: [0.2, 0.3, 0.18], rotation: [0.08, 0, -0.18] }),
+      muscleLobe({ name: "Left lateral deltoid", muscleId: "shoulders", position: [-0.98, 0.94, 0.01], scale: [0.2, 0.31, 0.2], rotation: [0, 0, -0.08] }),
+      muscleLobe({ name: "Left posterior deltoid", muscleId: "shoulders", position: [-0.87, 0.98, -0.23], scale: [0.19, 0.28, 0.17], rotation: [-0.08, 0, -0.13] }),
+      muscleLobe({ name: "Right anterior deltoid", muscleId: "shoulders", position: [0.86, 1.02, 0.23], scale: [0.2, 0.3, 0.18], rotation: [0.08, 0, 0.18] }),
+      muscleLobe({ name: "Right lateral deltoid", muscleId: "shoulders", position: [0.98, 0.94, 0.01], scale: [0.2, 0.31, 0.2], rotation: [0, 0, 0.08] }),
+      muscleLobe({ name: "Right posterior deltoid", muscleId: "shoulders", position: [0.87, 0.98, -0.23], scale: [0.19, 0.28, 0.17], rotation: [-0.08, 0, 0.13] }),
+
+      muscleLobe({ name: "Left biceps, long head", muscleId: "biceps", position: [-1.18, 0.29, 0.17], scale: [0.105, 0.39, 0.1], rotation: [0.07, 0, -0.16], shape: "capsule" }),
+      muscleLobe({ name: "Left biceps, short head", muscleId: "biceps", position: [-1.1, 0.29, 0.2], scale: [0.095, 0.36, 0.09], rotation: [0.06, 0, -0.16], shape: "capsule" }),
+      muscleLobe({ name: "Right biceps, long head", muscleId: "biceps", position: [1.18, 0.29, 0.17], scale: [0.105, 0.39, 0.1], rotation: [0.07, 0, 0.16], shape: "capsule" }),
+      muscleLobe({ name: "Right biceps, short head", muscleId: "biceps", position: [1.1, 0.29, 0.2], scale: [0.095, 0.36, 0.09], rotation: [0.06, 0, 0.16], shape: "capsule" }),
+      muscleLobe({ name: "Left triceps, long head", muscleId: "triceps", position: [-1.11, 0.3, -0.2], scale: [0.105, 0.4, 0.1], rotation: [0.06, 0, -0.16], shape: "capsule" }),
+      muscleLobe({ name: "Left triceps, lateral head", muscleId: "triceps", position: [-1.22, 0.34, -0.12], scale: [0.095, 0.34, 0.09], rotation: [0.05, 0, -0.16], shape: "capsule" }),
+      muscleLobe({ name: "Right triceps, long head", muscleId: "triceps", position: [1.11, 0.3, -0.2], scale: [0.105, 0.4, 0.1], rotation: [0.06, 0, 0.16], shape: "capsule" }),
+      muscleLobe({ name: "Right triceps, lateral head", muscleId: "triceps", position: [1.22, 0.34, -0.12], scale: [0.095, 0.34, 0.09], rotation: [0.05, 0, 0.16], shape: "capsule" }),
+
+      ...[-1, 1].flatMap((side) => {
+        const sideName = side < 0 ? "Left" : "Right";
+        const armRotation = side < 0 ? -0.1 : 0.1;
+        return [
+          muscleLobe({ name: `${sideName} brachioradialis`, muscleId: "forearms", position: [side * 1.37, -0.51, 0.15], scale: [0.075, 0.4, 0.065], rotation: [0.04, 0, armRotation], shape: "capsule" }),
+          muscleLobe({ name: `${sideName} forearm flexors`, muscleId: "forearms", position: [side * 1.3, -0.54, 0.11], scale: [0.075, 0.38, 0.07], rotation: [0.03, 0, armRotation], shape: "capsule" }),
+          muscleLobe({ name: `${sideName} forearm extensors`, muscleId: "forearms", position: [side * 1.33, -0.51, -0.11], scale: [0.08, 0.4, 0.07], rotation: [0.03, 0, armRotation], shape: "capsule" })
+        ];
+      }),
+
+      muscleLobe({ name: "Left sternocleidomastoid", muscleId: "neck", position: [-0.12, 1.63, 0.25], scale: [0.06, 0.24, 0.055], rotation: [0.04, 0.05, -0.22], shape: "capsule" }),
+      muscleLobe({ name: "Right sternocleidomastoid", muscleId: "neck", position: [0.12, 1.63, 0.25], scale: [0.06, 0.24, 0.055], rotation: [0.04, -0.05, 0.22], shape: "capsule" }),
+      muscleLobe({ name: "Left upper trapezius", muscleId: "traps", position: [-0.34, 1.38, -0.23], scale: [0.38, 0.16, 0.11], rotation: [-0.05, 0.04, -0.2] }),
+      muscleLobe({ name: "Right upper trapezius", muscleId: "traps", position: [0.34, 1.38, -0.23], scale: [0.38, 0.16, 0.11], rotation: [-0.05, -0.04, 0.2] }),
+      muscleLobe({ name: "Middle trapezius", muscleId: "traps", position: [0, 0.9, -0.48], scale: [0.52, 0.38, 0.085] }),
+      muscleLobe({ name: "Lower trapezius", muscleId: "traps", position: [0, 0.42, -0.48], scale: [0.28, 0.42, 0.075] }),
+      muscleLobe({ name: "Left latissimus dorsi", muscleId: "lats", position: [-0.46, 0.26, -0.46], scale: [0.32, 0.69, 0.1], rotation: [-0.04, -0.08, -0.08] }),
+      muscleLobe({ name: "Right latissimus dorsi", muscleId: "lats", position: [0.46, 0.26, -0.46], scale: [0.32, 0.69, 0.1], rotation: [-0.04, 0.08, 0.08] }),
+      muscleLobe({ name: "Left erector spinae", muscleId: "lowerBack", position: [-0.17, -0.23, -0.5], scale: [0.11, 0.52, 0.075], shape: "capsule" }),
+      muscleLobe({ name: "Right erector spinae", muscleId: "lowerBack", position: [0.17, -0.23, -0.5], scale: [0.11, 0.52, 0.075], shape: "capsule" }),
+
+      ...[0.5, 0.2, -0.1, -0.39].flatMap((y, index) => [
+        muscleLobe({ name: `Left rectus abdominis segment ${index + 1}`, muscleId: "abs", position: [-0.15, y, 0.52], scale: [0.125, index === 3 ? 0.12 : 0.135, 0.065] }),
+        muscleLobe({ name: `Right rectus abdominis segment ${index + 1}`, muscleId: "abs", position: [0.15, y, 0.52], scale: [0.125, index === 3 ? 0.12 : 0.135, 0.065] })
+      ]),
+      muscleLobe({ name: "Left external oblique, upper fibers", muscleId: "obliques", position: [-0.48, 0.18, 0.42], scale: [0.17, 0.38, 0.075], rotation: [0.03, 0.05, -0.12] }),
+      muscleLobe({ name: "Left external oblique, lower fibers", muscleId: "obliques", position: [-0.43, -0.35, 0.4], scale: [0.18, 0.27, 0.075], rotation: [0.04, 0.08, 0.12] }),
+      muscleLobe({ name: "Right external oblique, upper fibers", muscleId: "obliques", position: [0.48, 0.18, 0.42], scale: [0.17, 0.38, 0.075], rotation: [0.03, -0.05, 0.12] }),
+      muscleLobe({ name: "Right external oblique, lower fibers", muscleId: "obliques", position: [0.43, -0.35, 0.4], scale: [0.18, 0.27, 0.075], rotation: [0.04, -0.08, -0.12] }),
+
+      muscleLobe({ name: "Left gluteus maximus", muscleId: "glutes", position: [-0.33, -0.88, -0.39], scale: [0.36, 0.34, 0.16], rotation: [0.06, 0.05, -0.05] }),
+      muscleLobe({ name: "Right gluteus maximus", muscleId: "glutes", position: [0.33, -0.88, -0.39], scale: [0.36, 0.34, 0.16], rotation: [0.06, -0.05, 0.05] }),
+      muscleLobe({ name: "Left gluteus medius", muscleId: "glutes", position: [-0.48, -0.62, -0.27], scale: [0.25, 0.2, 0.1], rotation: [0.05, 0.08, -0.15] }),
+      muscleLobe({ name: "Right gluteus medius", muscleId: "glutes", position: [0.48, -0.62, -0.27], scale: [0.25, 0.2, 0.1], rotation: [0.05, -0.08, 0.15] }),
+
+      ...[-1, 1].flatMap((side) => {
+        const sideName = side < 0 ? "Left" : "Right";
+        return [
+          muscleLobe({ name: `${sideName} rectus femoris`, muscleId: "quads", position: [side * 0.4, -1.48, 0.25], scale: [0.105, 0.52, 0.1], rotation: [0.02, 0, side * -0.02], shape: "capsule" }),
+          muscleLobe({ name: `${sideName} vastus lateralis`, muscleId: "quads", position: [side * 0.51, -1.48, 0.12], scale: [0.12, 0.51, 0.1], rotation: [0.02, 0, side * -0.05], shape: "capsule" }),
+          muscleLobe({ name: `${sideName} vastus medialis`, muscleId: "quads", position: [side * 0.32, -1.75, 0.22], scale: [0.115, 0.3, 0.1], rotation: [0.03, 0, side * 0.09], shape: "capsule" }),
+          muscleLobe({ name: `${sideName} biceps femoris`, muscleId: "hamstrings", position: [side * 0.49, -1.5, -0.22], scale: [0.105, 0.53, 0.09], rotation: [0.03, 0, side * -0.04], shape: "capsule" }),
+          muscleLobe({ name: `${sideName} semitendinosus`, muscleId: "hamstrings", position: [side * 0.34, -1.5, -0.25], scale: [0.09, 0.52, 0.08], rotation: [0.03, 0, side * 0.03], shape: "capsule" }),
+          muscleLobe({ name: `${sideName} gastrocnemius, lateral head`, muscleId: "calves", position: [side * 0.47, -2.5, -0.13], scale: [0.1, 0.37, 0.095], rotation: [-0.02, 0, side * -0.035], shape: "capsule" }),
+          muscleLobe({ name: `${sideName} gastrocnemius, medial head`, muscleId: "calves", position: [side * 0.36, -2.5, -0.15], scale: [0.1, 0.39, 0.1], rotation: [-0.02, 0, side * 0.035], shape: "capsule" }),
+          muscleLobe({ name: `${sideName} soleus`, muscleId: "calves", position: [side * 0.42, -2.71, -0.03], scale: [0.115, 0.3, 0.08], rotation: [-0.02, 0, side * -0.02], shape: "capsule" }),
+          muscleLobe({ name: `${sideName} tibialis anterior`, muscleId: "feetAnkles", position: [side * 0.4, -2.62, 0.14], scale: [0.075, 0.38, 0.065], rotation: [-0.02, 0, side * 0.015], shape: "capsule" }),
+          muscleLobe({ name: `${sideName} ankle stabilizers`, muscleId: "feetAnkles", position: [side * 0.42, -3.06, 0.02], scale: [0.14, 0.16, 0.12] }),
+          muscleLobe({ name: `${sideName} dorsal foot muscles`, muscleId: "feetAnkles", position: [side * 0.42, -3.22, 0.31], scale: [0.19, 0.075, 0.36], rotation: [0.08, 0, side * -0.02] }),
+          muscleLobe({ name: `${sideName} toe extensors`, muscleId: "feetAnkles", position: [side * 0.42, -3.23, 0.66], scale: [0.18, 0.055, 0.17], rotation: [0.04, 0, side * -0.02] })
+        ];
+      }),
+
+      muscleLobe({ name: "Left foot selection area", muscleId: "feetAnkles", position: [-0.42, -3.2, 0.33], scale: [0.34, 0.16, 0.57], opacity: 0.08 }),
+      muscleLobe({ name: "Right foot selection area", muscleId: "feetAnkles", position: [0.42, -3.2, 0.33], scale: [0.34, 0.16, 0.57], opacity: 0.08 })
     ];
 
     pieces.forEach((piece) => this.addSystem("muscular", piece, true));
+
+    const details = [
+      muscleDetail({ position: [0, 0.23, 0.545], scale: [0.018, 0.72, 0.018] }),
+      muscleDetail({ position: [0, 0.92, 0.54], scale: [0.025, 0.35, 0.02] }),
+      muscleDetail({ position: [-0.4, -2.04, 0.24], scale: [0.09, 0.18, 0.045] }),
+      muscleDetail({ position: [0.4, -2.04, 0.24], scale: [0.09, 0.18, 0.045] }),
+      muscleDetail({ position: [-0.4, -2.96, -0.13], scale: [0.045, 0.28, 0.04] }),
+      muscleDetail({ position: [0.4, -2.96, -0.13], scale: [0.045, 0.28, 0.04] }),
+      muscleDetail({ position: [-0.22, 2.38, 0.38], scale: [0.11, 0.2, 0.045], color: "#737976", opacity: 0.72 }),
+      muscleDetail({ position: [0.22, 2.38, 0.38], scale: [0.11, 0.2, 0.045], color: "#737976", opacity: 0.72 }),
+      muscleDetail({ position: [-0.2, 2.12, 0.35], scale: [0.12, 0.1, 0.04], color: "#737976", opacity: 0.72 }),
+      muscleDetail({ position: [0.2, 2.12, 0.35], scale: [0.12, 0.1, 0.04], color: "#737976", opacity: 0.72 })
+    ];
+    details.forEach((detail) => this.systemGroups.get("muscular")?.add(detail));
   }
 
   buildSkeletalSystem() {
     const color = systemThemes.get("skeletal");
+    const addBone = (name, start, end, radius = 0.04, opacity = 0.94) => {
+      this.addSystem("skeletal", cylinderBetween({ name, systemId: "skeletal", start, end, radius, color, opacity }));
+    };
+    const addJoint = (name, position, scale = [0.09, 0.09, 0.09]) => {
+      this.addSystem("skeletal", ellipsoid({ name, systemId: "skeletal", position, scale, color, opacity: 0.95, segments: 20 }));
+    };
+
     [
-      ellipsoid({ name: "Skull", systemId: "skeletal", position: [0, 2.38, 0.02], scale: [0.32, 0.4, 0.3], color, opacity: 0.92 }),
-      cylinder({ name: "Cervical spine", systemId: "skeletal", position: [0, 1.65, -0.05], radiusTop: 0.07, radiusBottom: 0.08, height: 0.48, color, opacity: 0.92 }),
-      cylinder({ name: "Spine", systemId: "skeletal", position: [0, 0.18, -0.16], radiusTop: 0.08, radiusBottom: 0.1, height: 2.4, color, opacity: 0.9 }),
-      torus({ name: "Rib cage", systemId: "skeletal", position: [0, 0.62, 0.1], scale: [0.72, 0.88, 0.24], color, opacity: 0.88, tube: 0.035 }),
-      torus({ name: "Pelvis", systemId: "skeletal", position: [0, -0.84, 0.02], scale: [0.58, 0.34, 0.18], color, opacity: 0.88, tube: 0.045 })
+      ellipsoid({ name: "Cranium", systemId: "skeletal", position: [0, 2.42, -0.01], scale: [0.32, 0.36, 0.29], color, opacity: 0.95, segments: 32 }),
+      ellipsoid({ name: "Mandible", systemId: "skeletal", position: [0, 2.13, 0.15], scale: [0.25, 0.14, 0.19], color, opacity: 0.96, segments: 26 }),
+      cylinder({ name: "Sternum", systemId: "skeletal", position: [0, 0.74, 0.38], radiusTop: 0.035, radiusBottom: 0.05, height: 1.02, color, opacity: 0.96 }),
+      ellipsoid({ name: "Left scapula", systemId: "skeletal", position: [-0.43, 0.9, -0.38], scale: [0.27, 0.42, 0.045], rotation: [0.06, -0.08, -0.12], color, opacity: 0.93 }),
+      ellipsoid({ name: "Right scapula", systemId: "skeletal", position: [0.43, 0.9, -0.38], scale: [0.27, 0.42, 0.045], rotation: [0.06, 0.08, 0.12], color, opacity: 0.93 }),
+      ellipsoid({ name: "Left ilium", systemId: "skeletal", position: [-0.34, -0.76, -0.02], scale: [0.32, 0.31, 0.12], rotation: [0.06, 0.1, -0.16], color, opacity: 0.94 }),
+      ellipsoid({ name: "Right ilium", systemId: "skeletal", position: [0.34, -0.76, -0.02], scale: [0.32, 0.31, 0.12], rotation: [0.06, -0.1, 0.16], color, opacity: 0.94 }),
+      ellipsoid({ name: "Sacrum", systemId: "skeletal", position: [0, -0.82, -0.22], scale: [0.17, 0.27, 0.07], color, opacity: 0.96 })
     ].forEach((mesh) => this.addSystem("skeletal", mesh));
 
-    [
-      ["Left upper arm bone", [-0.88, 0.78, 0], [-1.24, 0.08, 0.04]],
-      ["Right upper arm bone", [0.88, 0.78, 0], [1.24, 0.08, 0.04]],
-      ["Left forearm bones", [-1.25, -0.08, 0.03], [-1.38, -0.86, 0.05]],
-      ["Right forearm bones", [1.25, -0.08, 0.03], [1.38, -0.86, 0.05]],
-      ["Left thigh bone", [-0.32, -0.95, 0], [-0.4, -1.95, 0.02]],
-      ["Right thigh bone", [0.32, -0.95, 0], [0.4, -1.95, 0.02]],
-      ["Left lower leg bones", [-0.4, -2.05, 0.02], [-0.4, -3.06, 0.04]],
-      ["Right lower leg bones", [0.4, -2.05, 0.02], [0.4, -3.06, 0.04]],
-      ["Left foot bones", [-0.4, -3.08, 0.06], [-0.4, -3.25, 0.55]],
-      ["Right foot bones", [0.4, -3.08, 0.06], [0.4, -3.25, 0.55]]
-    ].forEach(([name, start, end]) => {
-      this.addSystem("skeletal", cylinderBetween({ name, systemId: "skeletal", start, end, radius: 0.045, color, opacity: 0.9 }));
+    addBone("Left clavicle", [-0.04, 1.3, 0.29], [-0.85, 1.13, 0.08], 0.035);
+    addBone("Right clavicle", [0.04, 1.3, 0.29], [0.85, 1.13, 0.08], 0.035);
+
+    const vertebrae = [
+      ...Array.from({ length: 7 }, (_, index) => [`C${index + 1} cervical vertebra`, 1.84 - index * 0.075, 0.055]),
+      ...Array.from({ length: 12 }, (_, index) => [`T${index + 1} thoracic vertebra`, 1.27 - index * 0.105, 0.06]),
+      ...Array.from({ length: 5 }, (_, index) => [`L${index + 1} lumbar vertebra`, -0.04 - index * 0.13, 0.075])
+    ];
+    vertebrae.forEach(([name, y, size]) => {
+      this.addSystem("skeletal", ellipsoid({ name, systemId: "skeletal", position: [0, y, -0.2], scale: [size * 1.25, size * 0.62, size], color, opacity: 0.96, segments: 16 }));
+    });
+
+    Array.from({ length: 12 }, (_, index) => index).forEach((index) => {
+      const y = 1.2 - index * 0.1;
+      const taper = index < 7 ? 1 : 1 - (index - 6) * 0.08;
+      const width = (0.54 + Math.sin((index / 11) * Math.PI) * 0.22) * taper;
+      [-1, 1].forEach((side) => {
+        const sideName = side < 0 ? "Left" : "Right";
+        const points = index < 10
+          ? [[0, y, -0.2], [side * width * 0.58, y + 0.015, -0.2], [side * width, y - 0.01, 0.02], [side * width * 0.68, y - 0.025, 0.28], [side * 0.06, y - 0.02, 0.38]]
+          : [[0, y, -0.2], [side * width * 0.55, y - 0.01, -0.18], [side * width * 0.86, y - 0.04, -0.02]];
+        this.addSystem("skeletal", tubePath({ name: `${sideName} rib ${index + 1}`, systemId: "skeletal", points, radius: 0.024, color, opacity: 0.93, radialSegments: 8 }));
+      });
     });
 
     [
-      ["Left shoulder joint", [-0.88, 0.78, 0]],
-      ["Right shoulder joint", [0.88, 0.78, 0]],
-      ["Left elbow joint", [-1.24, 0.08, 0.04]],
-      ["Right elbow joint", [1.24, 0.08, 0.04]],
-      ["Left hip joint", [-0.32, -0.95, 0]],
-      ["Right hip joint", [0.32, -0.95, 0]],
-      ["Left knee joint", [-0.4, -2.02, 0.02]],
-      ["Right knee joint", [0.4, -2.02, 0.02]]
-    ].forEach(([name, position]) => {
-      this.addSystem("skeletal", ellipsoid({ name, systemId: "skeletal", position, scale: [0.1, 0.1, 0.1], color, opacity: 0.9, segments: 18 }));
+      ["Left humerus", [-0.88, 1.02, 0], [-1.23, 0.12, 0.03], 0.055],
+      ["Right humerus", [0.88, 1.02, 0], [1.23, 0.12, 0.03], 0.055],
+      ["Left radius", [-1.24, 0.02, 0.08], [-1.4, -0.88, 0.13], 0.032],
+      ["Left ulna", [-1.2, 0.02, -0.02], [-1.34, -0.88, -0.02], 0.034],
+      ["Right radius", [1.24, 0.02, 0.08], [1.4, -0.88, 0.13], 0.032],
+      ["Right ulna", [1.2, 0.02, -0.02], [1.34, -0.88, -0.02], 0.034],
+      ["Left femur", [-0.32, -0.92, 0], [-0.4, -1.96, 0.02], 0.064],
+      ["Right femur", [0.32, -0.92, 0], [0.4, -1.96, 0.02], 0.064],
+      ["Left tibia", [-0.37, -2.09, 0.05], [-0.4, -3.04, 0.08], 0.052],
+      ["Left fibula", [-0.49, -2.09, -0.01], [-0.48, -3.04, 0], 0.027],
+      ["Right tibia", [0.37, -2.09, 0.05], [0.4, -3.04, 0.08], 0.052],
+      ["Right fibula", [0.49, -2.09, -0.01], [0.48, -3.04, 0], 0.027]
+    ].forEach(([name, start, end, radius]) => addBone(name, start, end, radius));
+
+    [-1, 1].forEach((side) => {
+      const sideName = side < 0 ? "Left" : "Right";
+      for (let digit = 0; digit < 5; digit += 1) {
+        const spread = (digit - 2) * 0.035;
+        addBone(`${sideName} metacarpal ${digit + 1}`, [side * (1.37 + spread), -0.9, 0.04], [side * (1.38 + spread * 1.5), -1.1, 0.08], 0.012, 0.9);
+        addBone(`${sideName} finger ${digit + 1}`, [side * (1.38 + spread * 1.5), -1.1, 0.08], [side * (1.39 + spread * 1.8), -1.27, 0.09], 0.009, 0.88);
+        const footSpread = (digit - 2) * 0.05;
+        addBone(`${sideName} metatarsal ${digit + 1}`, [side * (0.42 + footSpread * 0.4), -3.13, 0.11], [side * (0.42 + footSpread), -3.24, 0.53], 0.014, 0.9);
+        addBone(`${sideName} toe ${digit + 1}`, [side * (0.42 + footSpread), -3.24, 0.53], [side * (0.42 + footSpread * 1.1), -3.24, 0.73], 0.01, 0.88);
+      }
     });
+
+    [
+      ["Left shoulder joint", [-0.88, 1.04, 0], [0.1, 0.1, 0.1]], ["Right shoulder joint", [0.88, 1.04, 0], [0.1, 0.1, 0.1]],
+      ["Left elbow joint", [-1.23, 0.08, 0.03]], ["Right elbow joint", [1.23, 0.08, 0.03]],
+      ["Left wrist joint", [-1.37, -0.91, 0.04], [0.08, 0.06, 0.08]], ["Right wrist joint", [1.37, -0.91, 0.04], [0.08, 0.06, 0.08]],
+      ["Left hip joint", [-0.32, -0.92, 0], [0.11, 0.11, 0.11]], ["Right hip joint", [0.32, -0.92, 0], [0.11, 0.11, 0.11]],
+      ["Left patella", [-0.4, -2.02, 0.2], [0.085, 0.11, 0.05]], ["Right patella", [0.4, -2.02, 0.2], [0.085, 0.11, 0.05]],
+      ["Left ankle joint", [-0.42, -3.08, 0.04], [0.09, 0.07, 0.09]], ["Right ankle joint", [0.42, -3.08, 0.04], [0.09, 0.07, 0.09]]
+    ].forEach(([name, position, scale]) => addJoint(name, position, scale));
   }
 
   buildEndocrineSystem() {
@@ -760,10 +931,11 @@ export class BodyScene {
     });
 
     const showSkin = this.visibleSystems.has("integumentary");
+    const showMuscles = this.visibleSystems.has("muscular");
     this.baseMeshes.forEach((mesh) => {
-      mesh.material.opacity = showSkin ? 0.34 : 0.13;
+      mesh.material.opacity = showSkin ? 0.34 : showMuscles ? 0.24 : 0.13;
       mesh.material.transparent = true;
-      mesh.material.color.set(showSkin ? systemThemes.get("integumentary") : mesh.userData.baseColor);
+      mesh.material.color.set(showSkin ? systemThemes.get("integumentary") : showMuscles ? "#c7cbc8" : mesh.userData.baseColor);
     });
 
     this.updateMaterials();
@@ -779,12 +951,18 @@ export class BodyScene {
     this.hoverMeshes.forEach((mesh) => {
       const isSelected = mesh.userData.muscleId && mesh.userData.muscleId === this.selectedId;
       const isHovered = mesh === this.hoveredMesh;
-      mesh.material.color.set(mesh.userData.baseColor);
+      const isMuscle = mesh.userData.systemId === "muscular";
+
+      if (isMuscle) {
+        mesh.material.color.set(isSelected ? MUSCLE_SELECTED_COLOR : isHovered ? MUSCLE_HOVER_COLOR : MUSCLE_REST_COLOR);
+      } else {
+        mesh.material.color.set(mesh.userData.baseColor);
+      }
       if (mesh.userData.systemId === "integumentary" && this.visibleSystems.has("integumentary")) {
         mesh.material.color.set(systemThemes.get("integumentary"));
       }
-      mesh.material.emissive = new THREE.Color(isSelected ? "#ffffff" : isHovered ? "#ffffff" : "#000000");
-      mesh.material.emissiveIntensity = isSelected ? 0.34 : isHovered ? 0.22 : 0;
+      mesh.material.emissive = new THREE.Color(isSelected ? "#5f1714" : isHovered ? "#6c410d" : "#000000");
+      mesh.material.emissiveIntensity = isSelected ? 0.18 : isHovered ? 0.14 : 0;
     });
   }
 

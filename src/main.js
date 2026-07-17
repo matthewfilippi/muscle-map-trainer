@@ -56,6 +56,82 @@ const PAIRING_ORDER_OPTIONS = [
   { id: "fiberFirst", label: "Fiber first" },
   { id: "carbsFirst", label: "Carbs first" }
 ];
+const EXERCISE_GUIDES = {
+  "Glute Bridge": {
+    src: "./exercise-guides/glute-bridge-technique-anatomy.webp",
+    alt: "Glute Bridge technique and anatomy guide"
+  },
+  "Step-Up": {
+    src: "./exercise-guides/step-up-technique-anatomy.webp",
+    alt: "Step-Up technique and anatomy guide"
+  },
+  "Barbell Hip Thrust": {
+    src: "./exercise-guides/barbell-hip-thrust-technique-anatomy.webp",
+    alt: "Barbell Hip Thrust technique and anatomy guide"
+  },
+  "Bulgarian Split Squat": {
+    src: "./exercise-guides/bulgarian-split-squat-technique-anatomy.webp",
+    alt: "Bulgarian Split Squat technique and anatomy guide"
+  }
+};
+
+function renderExerciseGuideDetails(exercise, muscle) {
+  const level = LEVELS[exercise.level] ?? LEVELS.beginner;
+  return `
+    <section class="exercise-guide-summary" aria-label="Exercise summary">
+      <div><span>Primary area</span><strong>${muscle.name}</strong></div>
+      <div><span>Level</span><strong>${level.label}</strong></div>
+      <div><span>Equipment</span><strong>${exercise.equipment}</strong></div>
+      <div><span>Workout position</span><strong>${muscle.region}</strong></div>
+    </section>
+    <div class="exercise-guide-detail-grid">
+      <section>
+        <p>Technique</p>
+        <h3>Form check</h3>
+        <ul>
+          <li>${exercise.cue}</li>
+          <li>Use a stable setup and a range of motion you can control.</li>
+          <li>Keep the working joints aligned and finish each repetition without momentum.</li>
+          <li>Match breathing to the movement and avoid holding your breath unnecessarily.</li>
+        </ul>
+      </section>
+      <section>
+        <p>Programming</p>
+        <h3>${level.sets} sets · ${level.reps} reps</h3>
+        <dl>
+          <div><dt>Effort</dt><dd>${level.note}</dd></div>
+          <div><dt>Rest</dt><dd>${level.rest}</dd></div>
+          <div><dt>Frequency</dt><dd>Count total weekly work for ${muscle.name.toLowerCase()} and allow recovery before repeating hard sessions.</dd></div>
+        </dl>
+      </section>
+      <section>
+        <p>Scale it</p>
+        <h3>Adjust one variable</h3>
+        <dl>
+          <div><dt>Regress</dt><dd>Reduce resistance or range, slow the movement, or add stable support.</dd></div>
+          <div><dt>Progress</dt><dd>Add load, repetitions, range, or tempo only while the same form remains repeatable.</dd></div>
+          <div><dt>Substitute</dt><dd>Choose another ${muscle.name.toLowerCase()} exercise that fits your equipment and movement tolerance.</dd></div>
+        </dl>
+      </section>
+      <section>
+        <p>Safety</p>
+        <h3>Know when to adjust</h3>
+        <ul>
+          <li>Stop for sharp pain, new numbness, faintness, chest pain, or unusual shortness of breath.</li>
+          <li>Reduce the challenge when alignment, balance, breathing, or control begins to break down.</li>
+          <li>Use a spotter or safety equipment whenever the setup or load makes an uncontrolled failure hazardous.</li>
+        </ul>
+      </section>
+      <section class="exercise-guide-track">
+        <p>Track</p>
+        <h3>Record the repeatable details</h3>
+        <div class="exercise-track-fields">
+          <span>Load or resistance</span><span>Sets and reps</span><span>Range of motion</span><span>Tempo</span><span>RPE / reps in reserve</span><span>Form or symptom notes</span>
+        </div>
+      </section>
+    </div>
+  `;
+}
 
 function getCurrentWeekKey() {
   const monday = new Date();
@@ -411,25 +487,64 @@ function renderMusclePage() {
                 </div>
               </div>
               <div class="muscle-exercise-grid">
-                ${group.exercises.map((exercise) => `
+                ${group.exercises.map((exercise) => {
+                  const hasGuide = Boolean(EXERCISE_GUIDES[exercise.name]);
+                  return `
                   <article class="exercise-card muscle-exercise-card">
                     <div>
                       <h3>${exercise.name}</h3>
                       <p>${exercise.cue}</p>
                     </div>
-                    <span>${exercise.equipment}</span>
+                    <div class="exercise-card-footer">
+                      <span>${exercise.equipment}</span>
+                      ${hasGuide ? `<button class="exercise-guide-button" type="button" data-exercise-guide="${escapeHtml(exercise.name)}">View visual guide</button>` : ""}
+                    </div>
                   </article>
-                `).join("")}
+                `;
+                }).join("")}
               </div>
             </section>
           `).join("")}
         </div>
       </div>
     </section>
+    <dialog class="exercise-guide-dialog" id="exerciseGuideDialog" aria-labelledby="exerciseGuideTitle">
+      <div class="exercise-guide-dialog-header">
+        <div>
+          <p>Exercise visual guide</p>
+          <h2 id="exerciseGuideTitle"></h2>
+        </div>
+        <button class="exercise-guide-close" type="button" aria-label="Close visual guide" title="Close">&times;</button>
+      </div>
+      <div class="exercise-guide-content">
+        <figure class="exercise-guide-visual" id="exerciseGuideVisual"></figure>
+        <div class="exercise-guide-details" id="exerciseGuideDetails"></div>
+      </div>
+    </dialog>
   `;
 
   pageRoot.querySelectorAll("[data-muscle-page]").forEach((button) => {
     button.addEventListener("click", () => setMusclePage(button.dataset.musclePage));
+  });
+
+  const guideDialog = pageRoot.querySelector("#exerciseGuideDialog");
+  const guideTitle = pageRoot.querySelector("#exerciseGuideTitle");
+  const guideVisual = pageRoot.querySelector("#exerciseGuideVisual");
+  const guideDetails = pageRoot.querySelector("#exerciseGuideDetails");
+  pageRoot.querySelectorAll("[data-exercise-guide]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const exerciseName = button.dataset.exerciseGuide;
+      const guide = EXERCISE_GUIDES[exerciseName];
+      const exercise = muscle.exercises.find((item) => item.name === exerciseName);
+      guideTitle.textContent = exerciseName;
+      guideVisual.innerHTML = `<img src="${guide.src}" alt="${guide.alt}" />`;
+      guideDetails.innerHTML = renderExerciseGuideDetails(exercise, muscle);
+      guideDialog.showModal();
+    });
+  });
+  guideDialog.querySelector(".exercise-guide-close").addEventListener("click", () => guideDialog.close());
+  guideDialog.addEventListener("click", (event) => {
+    if (event.target === guideDialog) guideDialog.close();
   });
 }
 
