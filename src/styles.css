@@ -618,8 +618,228 @@ h4 {
 }
 
 .muscle-exercise-card {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
   align-content: start;
   min-height: 132px;
+}
+
+.exercise-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.exercise-guide-button {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--muscle-color) 42%, var(--border));
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--muscle-color) 10%, #ffffff);
+  color: #25322c;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.exercise-guide-button:hover {
+  border-color: var(--muscle-color);
+  background: color-mix(in srgb, var(--muscle-color) 18%, #ffffff);
+}
+
+.exercise-guide-dialog {
+  width: min(1500px, calc(100vw - 32px));
+  max-width: none;
+  max-height: calc(100vh - 32px);
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #f4f7f4;
+  color: #1f2b26;
+  box-shadow: 0 28px 72px rgba(24, 37, 31, 0.28);
+  overflow: hidden;
+}
+
+.exercise-guide-dialog::backdrop {
+  background: rgba(17, 27, 22, 0.68);
+  backdrop-filter: blur(4px);
+}
+
+.exercise-guide-dialog-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.exercise-guide-dialog-header p,
+.exercise-guide-dialog-header h2 {
+  margin: 0;
+}
+
+.exercise-guide-dialog-header p {
+  color: var(--green-dark);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.exercise-guide-dialog-header h2 {
+  font-size: clamp(1.15rem, 2vw, 1.55rem);
+}
+
+.exercise-guide-close {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: #ffffff;
+  color: #25322c;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.exercise-guide-content {
+  max-height: calc(100vh - 112px);
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.exercise-guide-visual {
+  margin: 0;
+}
+
+.exercise-guide-visual img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border: 1px solid #d9e0dc;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.exercise-guide-details {
+  display: grid;
+  gap: 14px;
+}
+
+.exercise-guide-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.exercise-guide-summary div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+  padding: 12px 14px;
+}
+
+.exercise-guide-summary div + div {
+  border-left: 1px solid var(--border);
+}
+
+.exercise-guide-summary span,
+.exercise-guide-detail-grid section > p {
+  color: var(--green-dark);
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.exercise-guide-summary strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.exercise-guide-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.exercise-guide-detail-grid section {
+  min-width: 0;
+  padding: 16px;
+  border-top: 4px solid color-mix(in srgb, var(--muscle-color) 72%, #ffffff);
+  background: #ffffff;
+}
+
+.exercise-guide-detail-grid section > p,
+.exercise-guide-detail-grid h3 {
+  margin: 0;
+}
+
+.exercise-guide-detail-grid h3 {
+  margin-top: 3px;
+  font-size: 1rem;
+}
+
+.exercise-guide-detail-grid ul {
+  display: grid;
+  gap: 7px;
+  margin: 12px 0 0;
+  padding-left: 18px;
+  color: #52615a;
+  line-height: 1.42;
+}
+
+.exercise-guide-detail-grid dl {
+  display: grid;
+  gap: 9px;
+  margin: 12px 0 0;
+}
+
+.exercise-guide-detail-grid dl div {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr);
+  gap: 9px;
+}
+
+.exercise-guide-detail-grid dt {
+  color: #26342d;
+  font-weight: 900;
+}
+
+.exercise-guide-detail-grid dd {
+  margin: 0;
+  color: #52615a;
+  line-height: 1.42;
+}
+
+.exercise-guide-track {
+  grid-column: 1 / -1;
+}
+
+.exercise-track-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.exercise-track-fields span {
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #f5f8f5;
+  color: #52615a;
+  font-size: 0.78rem;
+  font-weight: 800;
 }
 
 .routine-builder {
@@ -2291,6 +2511,20 @@ h4 {
   .nutrient-food-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .exercise-guide-summary,
+  .exercise-track-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .exercise-guide-summary div:nth-child(3) {
+    border-left: 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .exercise-guide-summary div:nth-child(4) {
+    border-top: 1px solid var(--border);
+  }
 }
 
 @media (max-width: 640px) {
@@ -2428,6 +2662,32 @@ h4 {
 
   .progress-card {
     min-width: 0;
+  }
+
+  .exercise-guide-dialog {
+    width: calc(100vw - 16px);
+    max-height: calc(100vh - 16px);
+  }
+
+  .exercise-guide-dialog-header,
+  .exercise-guide-content {
+    padding: 12px;
+  }
+
+  .exercise-guide-summary,
+  .exercise-guide-detail-grid,
+  .exercise-track-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .exercise-guide-summary div + div,
+  .exercise-guide-summary div:nth-child(3) {
+    border-left: 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .exercise-guide-track {
+    grid-column: auto;
   }
 
   .phase-heading,
