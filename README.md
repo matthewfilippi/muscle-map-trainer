@@ -1,6 +1,6 @@
 # Wellness Map
 
-An interactive wellness and fitness app with a selectable 3D body map, expanded exercise catalog, workout routine generator, stretching guide, food planner, and nutrient tracker.
+An interactive wellness and fitness app with a selectable 3D body map, expanded exercise catalog, workout routine generator, stretching guide, food planner, nutrient tracker, and personal organizer.
 
 ## Features
 
@@ -18,6 +18,12 @@ An interactive wellness and fitness app with a selectable 3D body map, expanded 
 - Seven-day nutrient logging with an option to import the current plate estimate
 - Activity-based calorie comparison for work and exercise output
 - Responsive layout for desktop and mobile browsers
+- Grocery lists for food on hand and food wanted
+- Flexible Records lists with templates, list styles, search, and reordering
+- Inventory tracking by section and container with stock and date alerts
+- Month, week, day, and list task calendar views
+- Explicit ID-based synchronization from Records to Grocery or Inventory
+- User-partitioned organizer persistence in local browser storage
 
 ## Run Locally
 
@@ -35,6 +41,14 @@ npm run build
 ```
 
 The production files are generated in `dist/`.
+
+## Test
+
+```bash
+npm test
+```
+
+The organizer architecture, storage boundary, data ownership model, synchronization behavior, and future backend migration path are documented in [docs/organizer-architecture.md](docs/organizer-architecture.md).
 
 ## Nutrition Data
 

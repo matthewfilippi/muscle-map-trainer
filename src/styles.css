@@ -619,9 +619,43 @@ h4 {
 
 .muscle-exercise-card {
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-rows: auto;
   align-content: start;
   min-height: 132px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.exercise-card-body {
+  min-height: 132px;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  padding: 14px;
+}
+
+.exercise-guide-preview {
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  display: block;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.exercise-guide-preview img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  transition: transform 180ms ease;
+}
+
+.exercise-guide-preview:hover img,
+.exercise-guide-preview:focus-visible img {
+  transform: scale(1.015);
 }
 
 .exercise-card-footer {

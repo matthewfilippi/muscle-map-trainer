@@ -28,8 +28,22 @@ import {
   getNutrientTarget,
   normalizeNutritionProfile
 } from "./nutrition.js";
+import { renderOrganizerPage } from "./organizerPages.js";
 
-const PAGES = new Set(["body", "muscles", "routine", "stretches", "food", "pairings", "nutrients"]);
+const PAGES = new Set([
+  "body",
+  "muscles",
+  "routine",
+  "stretches",
+  "food",
+  "pairings",
+  "nutrients",
+  "grocery",
+  "records",
+  "inventory",
+  "tasks"
+]);
+const ORGANIZER_PAGES = new Set(["grocery", "records", "inventory", "tasks"]);
 const WEEK_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const NUTRIENT_LOG_KEY = "wellness-map-nutrient-log";
 const NUTRITION_PROFILE_KEY = "wellness-map-nutrition-profile";
@@ -297,13 +311,22 @@ function buildShell() {
           <button class="nav-button" data-page="food" type="button">Food</button>
           <button class="nav-button" data-page="pairings" type="button">Pairings</button>
           <button class="nav-button" data-page="nutrients" type="button">Nutrients</button>
+          <div class="nav-dropdown organizer-nav-dropdown">
+            <button class="nav-button" data-page="records" data-page-group="organizer" type="button">Organize</button>
+            <div class="muscle-menu organizer-menu" aria-label="Organizer pages">
+              <button type="button" data-page="grocery">Grocery</button>
+              <button type="button" data-page="records">Records</button>
+              <button type="button" data-page="inventory">Inventory</button>
+              <button type="button" data-page="tasks">Tasks</button>
+            </div>
+          </div>
         </nav>
       </header>
       <main id="pageRoot"></main>
     </div>
   `;
 
-  app.querySelectorAll(".nav-button").forEach((button) => {
+  app.querySelectorAll("[data-page]").forEach((button) => {
     button.addEventListener("click", () => {
       if (button.dataset.page === "muscles") {
         setMusclePage(appState.selectedMuscle);
@@ -327,6 +350,10 @@ function render() {
 
   appState.page = routeFromHash();
   app.querySelectorAll(".nav-button").forEach((button) => {
+    const isOrganizerGroup = button.dataset.pageGroup === "organizer" && ORGANIZER_PAGES.has(appState.page);
+    button.classList.toggle("is-active", button.dataset.page === appState.page || isOrganizerGroup);
+  });
+  app.querySelectorAll(".organizer-menu [data-page]").forEach((button) => {
     button.classList.toggle("is-active", button.dataset.page === appState.page);
   });
 
@@ -334,8 +361,11 @@ function render() {
     bodyScene.destroy();
     bodyScene = null;
   }
+  document.querySelector("#pageRoot").onclick = null;
 
-  if (appState.page === "routine") {
+  if (ORGANIZER_PAGES.has(appState.page)) {
+    renderOrganizerPage(appState.page, document.querySelector("#pageRoot"));
+  } else if (appState.page === "routine") {
     renderRoutinePage();
   } else if (appState.page === "muscles") {
     renderMusclePage();
@@ -488,16 +518,24 @@ function renderMusclePage() {
               </div>
               <div class="muscle-exercise-grid">
                 ${group.exercises.map((exercise) => {
-                  const hasGuide = Boolean(EXERCISE_GUIDES[exercise.name]);
+                  const guide = EXERCISE_GUIDES[exercise.name];
+                  const hasGuide = Boolean(guide);
                   return `
                   <article class="exercise-card muscle-exercise-card">
-                    <div>
-                      <h3>${exercise.name}</h3>
-                      <p>${exercise.cue}</p>
-                    </div>
-                    <div class="exercise-card-footer">
-                      <span>${exercise.equipment}</span>
-                      ${hasGuide ? `<button class="exercise-guide-button" type="button" data-exercise-guide="${escapeHtml(exercise.name)}">View visual guide</button>` : ""}
+                    ${hasGuide ? `
+                      <button class="exercise-guide-preview" type="button" data-exercise-guide="${escapeHtml(exercise.name)}" aria-label="Open the ${escapeHtml(exercise.name)} visual guide" title="Open visual guide">
+                        <img src="${guide.src}" alt="${guide.alt}" loading="lazy" />
+                      </button>
+                    ` : ""}
+                    <div class="exercise-card-body">
+                      <div>
+                        <h3>${exercise.name}</h3>
+                        <p>${exercise.cue}</p>
+                      </div>
+                      <div class="exercise-card-footer">
+                        <span>${exercise.equipment}</span>
+                        ${hasGuide ? `<button class="exercise-guide-button" type="button" data-exercise-guide="${escapeHtml(exercise.name)}">View visual guide</button>` : ""}
+                      </div>
                     </div>
                   </article>
                 `;
