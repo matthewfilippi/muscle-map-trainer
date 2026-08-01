@@ -1282,7 +1282,23 @@ export const FOOD_PAIRINGS = [
   { id: "yogurt-almonds-kiwi", name: "Greek Yogurt + Almonds + Kiwi", foods: ["greek-yogurt", "almonds", "kiwi"], reason: "Protein, healthy fats, and vitamin C make a compact recovery snack." },
   { id: "beef-potato-brussels", name: "Lean Beef + Potatoes + Brussels Sprouts", foods: ["lean-beef", "potatoes", "brussels-sprouts"], reason: "Iron-rich protein pairs with potassium-rich carbs and vitamin C vegetables." },
   { id: "sardines-crackers-cucumber", name: "Sardines + Whole-Grain Pita + Cucumber", foods: ["sardines", "whole-grain-pita", "cucumber"], reason: "Omega-3 protein, whole-grain carbohydrate, and hydrating crunch pair cleanly." },
-  { id: "edamame-orange-rice", name: "Edamame + Orange + Brown Rice", foods: ["edamame", "orange", "brown-rice"], reason: "Plant protein and carbohydrate pair with vitamin C for a portable meal." }
+  { id: "edamame-orange-rice", name: "Edamame + Orange + Brown Rice", foods: ["edamame", "orange", "brown-rice"], reason: "Plant protein and carbohydrate pair with vitamin C for a portable meal." },
+  { id: "tofu-broccoli-rice", name: "Tofu + Broccoli + Brown Rice", foods: ["tofu", "broccoli", "brown-rice"], reason: "Plant protein, whole-grain carbohydrate, and vitamin C-rich vegetables make a balanced bowl." },
+  { id: "beans-tortilla-lime", name: "Black Beans + Corn Tortillas + Lime", foods: ["black-beans", "corn-tortilla", "lime"], reason: "Legume and grain proteins complement one another, while lime adds acidity and vitamin C." },
+  { id: "spinach-eggs-avocado", name: "Spinach + Eggs + Avocado", foods: ["spinach", "eggs", "avocado-fruit"], reason: "Protein and fat accompany carotenoid-rich greens in a compact savory plate." },
+  { id: "oats-apple-flax", name: "Oats + Apple + Ground Flaxseed", foods: ["oats", "apple", "flaxseed"], reason: "Several fiber types combine with healthy fat for a more gradual breakfast." },
+  { id: "salmon-tomato-olive-oil", name: "Salmon + Tomatoes + Olive Oil", foods: ["salmon", "tomatoes", "olive-oil"], reason: "Omega-3 protein and olive oil accompany tomatoes' fat-soluble lycopene." },
+  { id: "yogurt-raspberry-chia", name: "Greek Yogurt + Raspberries + Chia", foods: ["greek-yogurt", "raspberries", "chia-seeds"], reason: "Protein, probiotics, colorful fruit, and soluble fiber create a filling snack." },
+  { id: "lentils-tomato-lemon", name: "Lentils + Tomatoes + Lemon", foods: ["lentils", "tomatoes", "lemon"], reason: "Two vitamin C and acid sources accompany lentils' plant iron and fiber." },
+  { id: "sardines-bok-choy-rice", name: "Sardines + Bok Choy + Brown Rice", foods: ["sardines", "bok-choy", "brown-rice"], reason: "Omega-3 fats, calcium-rich greens, and whole-grain carbohydrate cover several food groups." },
+  { id: "chicken-barley-brussels", name: "Chicken + Barley + Brussels Sprouts", foods: ["chicken-breast", "barley", "brussels-sprouts"], reason: "Lean protein joins beta-glucan fiber and a vitamin C-rich vegetable." },
+  { id: "tempeh-bok-choy-pepper", name: "Tempeh + Bok Choy + Bell Pepper", foods: ["tempeh", "bok-choy", "bell-pepper"], reason: "Fermented plant protein pairs with leafy greens and abundant vitamin C." },
+  { id: "tuna-toast-cucumber", name: "Tuna + Whole-Wheat Bread + Cucumber", foods: ["tuna", "whole-wheat-bread", "cucumber"], reason: "Lean protein buffers whole-grain carbohydrate while cucumber adds hydrating crunch." },
+  { id: "chickpea-spinach-tahini-lemon", name: "Chickpeas + Spinach + Tahini + Lemon", foods: ["chickpeas", "spinach", "tahini", "lemon"], reason: "Plant protein, iron-rich greens, sesame fat, and vitamin C form a useful plant-based plate." },
+  { id: "eggs-sweet-potato-kale", name: "Eggs + Sweet Potato + Kale", foods: ["eggs", "sweet-potato", "kale"], reason: "Protein and fat accompany a fiber-rich carbohydrate and carotenoid-rich greens." },
+  { id: "quinoa-beans-tomato", name: "Quinoa + Black Beans + Tomatoes", foods: ["quinoa", "black-beans", "tomatoes"], reason: "Two plant-protein sources pair with fiber and vitamin C-rich tomatoes." },
+  { id: "kefir-blueberry-oats", name: "Kefir + Blueberries + Oats", foods: ["kefir", "blueberries", "oats"], reason: "Probiotics meet prebiotic and beta-glucan fibers plus berry polyphenols." },
+  { id: "cauliflower-turmeric-pepper-oil", name: "Cauliflower + Turmeric + Black Pepper + Olive Oil", foods: ["cauliflower", "turmeric", "black-pepper", "olive-oil"], reason: "A vegetable and healthy fat carry turmeric and black pepper's complementary bioactive compounds." }
 ];
 
 export const WORK_ACTIVITY_LEVELS = [

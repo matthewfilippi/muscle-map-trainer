@@ -12,7 +12,6 @@ import {
   STRETCH_ROUTINE,
   WORK_ACTIVITY_LEVELS,
   getActiveSplits,
-  getAllowedMuscleIds,
   getCompatibleSplitIds,
   getEquipmentIdsForMuscles,
   getEquipmentOptions,
@@ -29,6 +28,14 @@ import {
   normalizeNutritionProfile
 } from "./nutrition.js";
 import { renderOrganizerPage } from "./organizerPages.js";
+import {
+  CUSTOM_ROUTINE_STORAGE_KEY,
+  analyzeRoutine,
+  createRoutineItem,
+  getDefaultCustomRoutine,
+  normalizeCustomRoutine
+} from "./routineBuilder.js";
+import { choosePairingCounterSuggestion } from "./pairingSuggestions.js";
 
 const PAGES = new Set([
   "body",
@@ -192,17 +199,38 @@ function loadFoodPlate() {
   }
 }
 
+function loadCustomRoutine() {
+  try {
+    return normalizeCustomRoutine(JSON.parse(localStorage.getItem(CUSTOM_ROUTINE_STORAGE_KEY)) || {});
+  } catch {
+    return getDefaultCustomRoutine();
+  }
+}
+
+function saveCustomRoutine() {
+  const routine = {
+    name: appState.routineName,
+    level: appState.level,
+    targetMuscles: appState.selectedRoutineMuscles,
+    selectedEquipment: appState.selectedEquipment,
+    items: appState.routineItems
+  };
+  localStorage.setItem(CUSTOM_ROUTINE_STORAGE_KEY, JSON.stringify(normalizeCustomRoutine(routine)));
+}
+
 const savedPlate = loadFoodPlate();
+const savedCustomRoutine = loadCustomRoutine();
 
 const appState = {
   page: "body",
   selectedMuscle: "chest",
   visibleBodySystems: ["muscular"],
-  selectedRoutineMuscles: ["chest", "shoulders", "triceps"],
-  selectedEquipment: [],
-  level: "beginner",
-  generatedRoutine: [],
-  unmatchedMuscles: [],
+  routineName: savedCustomRoutine.name,
+  selectedRoutineMuscles: savedCustomRoutine.targetMuscles,
+  selectedEquipment: savedCustomRoutine.selectedEquipment,
+  level: savedCustomRoutine.level,
+  routineItems: savedCustomRoutine.items,
+  routineSearch: "",
   completedStretches: [],
   foodGroup: "all",
   foodSearch: "",
@@ -306,7 +334,7 @@ function buildShell() {
               `).join("")}
             </div>
           </div>
-          <button class="nav-button" data-page="routine" type="button">Routine Generator</button>
+          <button class="nav-button" data-page="routine" type="button">Routine Builder</button>
           <button class="nav-button" data-page="stretches" type="button">Stretches</button>
           <button class="nav-button" data-page="food" type="button">Food</button>
           <button class="nav-button" data-page="pairings" type="button">Pairings</button>
@@ -593,10 +621,9 @@ function renderRoutinePage() {
       <div class="routine-builder">
         <div class="builder-header">
           <div>
-            <p>Generator</p>
-            <h1>Workout Routine</h1>
+            <p>Exercise library</p>
+            <h1>Build Your Routine</h1>
           </div>
-          <button class="primary-button" type="button" id="generateRoutine">Generate</button>
         </div>
         <div class="level-control" role="radiogroup" aria-label="Workout level">
           ${Object.entries(LEVELS).map(([id, level]) => `
@@ -608,17 +635,17 @@ function renderRoutinePage() {
         <div class="split-summary" id="splitSummary"></div>
         <div class="routine-muscles" id="routineMuscles"></div>
         <div class="equipment-filter" id="equipmentFilter"></div>
+        <div class="routine-library" id="routineLibrary"></div>
       </div>
       <div class="routine-result" id="routineResult" aria-live="polite"></div>
     </section>
   `;
 
-  pageRoot.querySelector("#generateRoutine").addEventListener("click", generateRoutine);
   pageRoot.querySelectorAll(".level-button").forEach((button) => {
     button.addEventListener("click", () => {
       appState.level = button.dataset.level;
       pruneUnavailableEquipment();
-      generateRoutine();
+      saveCustomRoutine();
       renderRoutinePage();
     });
   });
@@ -626,11 +653,8 @@ function renderRoutinePage() {
   renderRoutineMuscles();
   renderEquipmentFilter();
   renderSplitSummary();
-  if (appState.generatedRoutine.length === 0) {
-    generateRoutine();
-  } else {
-    renderRoutineResult();
-  }
+  renderRoutineLibrary();
+  renderRoutineResult();
 }
 
 function renderRoutineMuscles() {
@@ -638,20 +662,23 @@ function renderRoutineMuscles() {
   if (!root) return;
 
   const selected = appState.selectedRoutineMuscles;
-  const allowed = getAllowedMuscleIds(selected);
   root.innerHTML = `
-    <h2>Muscle Groups</h2>
+    <div class="routine-section-heading">
+      <div>
+        <p>Targets</p>
+        <h2>Muscle Groups</h2>
+      </div>
+      <span>${selected.length} selected</span>
+    </div>
     <div class="routine-grid">
       ${MUSCLES.map((muscle) => {
         const checked = selected.includes(muscle.id);
-        const disabled = !checked && !allowed.has(muscle.id);
         return `
           <button
             class="routine-toggle ${checked ? "is-selected" : ""}"
             type="button"
             data-muscle="${muscle.id}"
             aria-pressed="${checked}"
-            ${disabled ? "disabled" : ""}
           >
             <span class="swatch" style="--swatch: ${muscle.color}"></span>
             <span>${muscle.name}</span>
@@ -703,7 +730,7 @@ function renderEquipmentFilter() {
 
   root.querySelector("#clearEquipment").addEventListener("click", () => {
     appState.selectedEquipment = [];
-    generateRoutine();
+    saveCustomRoutine();
     renderRoutinePage();
   });
 
@@ -722,7 +749,7 @@ function toggleEquipment(id) {
   }
 
   pruneUnavailableEquipment();
-  generateRoutine();
+  saveCustomRoutine();
   renderRoutinePage();
 }
 
@@ -731,13 +758,11 @@ function toggleRoutineMuscle(id) {
   if (selected.includes(id)) {
     appState.selectedRoutineMuscles = selected.filter((muscleId) => muscleId !== id);
   } else {
-    const allowed = getAllowedMuscleIds(selected);
-    if (!allowed.has(id)) return;
     appState.selectedRoutineMuscles = [...selected, id];
   }
 
   pruneUnavailableEquipment();
-  generateRoutine();
+  saveCustomRoutine();
   renderRoutinePage();
 }
 
@@ -750,117 +775,260 @@ function renderSplitSummary() {
   const splitNames = activeSplits.map((split) => split.name).join(" / ");
   const compatibleIds = getCompatibleSplitIds(selected);
   const isSpecific = selected.length > 0 && compatibleIds.length === 1;
+  const isMixed = selected.length > 1 && compatibleIds.length === 0;
 
   root.innerHTML = `
     <div class="split-line">
       <span>${selected.length || 0} selected</span>
-      <strong>${splitNames || "Choose a group"}</strong>
+      <strong>${isMixed ? "Mixed focus" : splitNames || "Choose a group"}</strong>
     </div>
-    <p>${isSpecific ? activeSplits[0].description : "Available selections stay inside compatible training splits."}</p>
+    <p>${isMixed
+      ? "You can build this combination. The routine review will flag when splitting the focus may be worth considering."
+      : isSpecific
+        ? activeSplits[0].description
+        : "Select the muscles you intend to train in this sitting."}</p>
   `;
 }
 
-function generateRoutine() {
-  const selected = appState.selectedRoutineMuscles;
-  if (selected.length === 0) {
-    appState.generatedRoutine = [];
-    appState.unmatchedMuscles = [];
-    renderRoutineResult();
-    return;
-  }
+function renderRoutineLibrary() {
+  const root = app.querySelector("#routineLibrary");
+  if (!root) return;
 
-  const level = LEVELS[appState.level];
-  const routine = [];
-  const unmatchedMuscles = [];
+  const query = appState.routineSearch.trim().toLowerCase();
+  const selectedKeys = new Set(appState.routineItems.map((item) => `${item.muscleId}:${item.exerciseName}`));
+  const groups = appState.selectedRoutineMuscles.map((muscleId) => {
+    const muscle = getMuscle(muscleId);
+    const exercises = getExercisePool(muscleId, appState.level, appState.selectedEquipment)
+      .filter((exercise) => !query || `${exercise.name} ${exercise.equipment} ${exercise.cue}`.toLowerCase().includes(query));
+    return { muscle, exercises };
+  }).filter((group) => group.exercises.length > 0);
+  const resultCount = groups.reduce((sum, group) => sum + group.exercises.length, 0);
 
-  selected.forEach((muscleId, muscleIndex) => {
-    const pool = getExercisePool(muscleId, appState.level, appState.selectedEquipment);
-    if (pool.length === 0) {
-      unmatchedMuscles.push(muscleId);
-      return;
-    }
+  root.innerHTML = `
+    <div class="routine-library-toolbar">
+      <div>
+        <p>Available exercises</p>
+        <h2>${resultCount} Options</h2>
+      </div>
+      <label class="routine-search">
+        <span class="sr-only">Search exercises</span>
+        <input type="search" value="${escapeHtml(appState.routineSearch)}" placeholder="Search exercises" data-routine-search>
+      </label>
+    </div>
+    <div class="routine-library-groups">
+      ${appState.selectedRoutineMuscles.length === 0
+        ? `<div class="routine-library-empty"><strong>Choose a target muscle</strong></div>`
+        : groups.length === 0
+          ? `<div class="routine-library-empty"><strong>No exercises match these filters</strong></div>`
+          : groups.map(({ muscle, exercises }) => `
+            <section class="routine-library-group">
+              <div class="routine-library-group-heading">
+                <span class="swatch" style="--swatch: ${muscle.color}"></span>
+                <h3>${muscle.name}</h3>
+              </div>
+              <div class="routine-library-list">
+                ${exercises.map((exercise) => {
+                  const key = `${muscle.id}:${exercise.name}`;
+                  const isAdded = selectedKeys.has(key);
+                  return `
+                    <article class="routine-library-item${isAdded ? " is-added" : ""}">
+                      <div>
+                        <strong>${escapeHtml(exercise.name)}</strong>
+                        <span>${escapeHtml(exercise.equipment)} · ${LEVELS[exercise.level].label}</span>
+                      </div>
+                      <button
+                        type="button"
+                        class="routine-add-button"
+                        data-add-exercise="${escapeHtml(exercise.name)}"
+                        data-add-muscle="${muscle.id}"
+                        aria-label="${isAdded ? `${escapeHtml(exercise.name)} is already added` : `Add ${escapeHtml(exercise.name)}`}"
+                        title="${isAdded ? "Already added" : "Add exercise"}"
+                        ${isAdded ? "disabled" : ""}
+                      >${isAdded ? "Added" : "+"}</button>
+                    </article>
+                  `;
+                }).join("")}
+              </div>
+            </section>
+          `).join("")}
+    </div>
+  `;
 
-    const count = Math.min(level.exerciseCount, pool.length);
-    for (let index = 0; index < count; index += 1) {
-      const offset = Math.floor(Math.random() * pool.length);
-      routine.push({
-        muscleId,
-        exercise: pool[(index + muscleIndex + offset) % pool.length],
-        sets: level.sets,
-        reps: level.reps,
-        rest: level.rest
-      });
-    }
+  root.querySelector("[data-routine-search]")?.addEventListener("input", (event) => {
+    appState.routineSearch = event.target.value;
+    renderRoutineLibrary();
   });
 
-  appState.generatedRoutine = routine;
-  appState.unmatchedMuscles = unmatchedMuscles;
-  renderRoutineResult();
+  root.querySelectorAll("[data-add-exercise]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const muscle = getMuscle(button.dataset.addMuscle);
+      const exercise = muscle?.exercises.find((candidate) => candidate.name === button.dataset.addExercise);
+      if (!exercise) return;
+      appState.routineItems = [...appState.routineItems, createRoutineItem(muscle.id, exercise, appState.level)];
+      saveCustomRoutine();
+      renderRoutinePage();
+    });
+  });
 }
 
 function renderRoutineResult() {
   const root = app.querySelector("#routineResult");
   if (!root) return;
-
-  if (appState.generatedRoutine.length === 0) {
-    root.innerHTML = `
-      <div class="empty-state">
-        <h2>No Routine Yet</h2>
-        <p>${appState.selectedRoutineMuscles.length === 0 ? "Select a compatible muscle group to build a session." : "No exercises match the current equipment filters."}</p>
-      </div>
-    `;
-    return;
-  }
-
-  const level = LEVELS[appState.level];
-  const selectedNames = appState.selectedRoutineMuscles.map(muscleName).join(" + ");
-  const equipmentOptions = getEquipmentOptions();
-  const selectedEquipmentNames = appState.selectedEquipment
-    .map((equipmentId) => equipmentOptions.find((equipment) => equipment.id === equipmentId)?.label)
-    .filter(Boolean)
-    .join(", ");
-  const totalSets = appState.generatedRoutine.reduce((sum, item) => sum + Number.parseInt(item.sets, 10), 0);
-  const estimatedMinutes = Math.max(25, appState.generatedRoutine.length * (appState.level === "expert" ? 8 : 6));
-  const unmatchedNotice = appState.unmatchedMuscles.length > 0
-    ? `<div class="routine-warning">No matching ${level.label.toLowerCase()} exercises for ${appState.unmatchedMuscles.map(muscleName).join(", ")} with the current equipment filters.</div>`
-    : "";
+  const routine = {
+    name: appState.routineName,
+    level: appState.level,
+    targetMuscles: appState.selectedRoutineMuscles,
+    selectedEquipment: appState.selectedEquipment,
+    items: appState.routineItems
+  };
+  const review = analyzeRoutine(routine);
+  const hasCautions = review.cautionCount > 0;
+  const reviewTitle = appState.routineItems.length === 0
+    ? "Routine needs exercises"
+    : hasCautions
+      ? `${review.cautionCount} item${review.cautionCount === 1 ? "" : "s"} to review`
+      : "No cautions found";
 
   root.innerHTML = `
-    <div class="result-header">
-      <div>
-        <p>${level.label}</p>
-        <h2>${selectedNames}</h2>
-      </div>
-      <div class="metrics">
-        <span>${estimatedMinutes} min</span>
-        <span>${totalSets}+ sets</span>
+    <div class="custom-routine-header">
+      <label class="routine-name-field">
+        <span>Routine name</span>
+        <input type="text" maxlength="80" value="${escapeHtml(appState.routineName)}" data-routine-name>
+      </label>
+      <div class="routine-header-actions">
+        <span>Saved on this device</span>
+        <button type="button" class="text-button is-danger" data-clear-routine ${appState.routineItems.length === 0 ? "disabled" : ""}>Clear</button>
       </div>
     </div>
-    <div class="routine-note">${selectedEquipmentNames ? `Equipment: ${selectedEquipmentNames}` : "Equipment: all available options"}</div>
-    ${unmatchedNotice}
-    <div class="routine-note">${level.note}</div>
+    <div class="routine-metrics" aria-label="Routine totals">
+      <div><strong>${review.totalExercises}</strong><span>Exercises</span></div>
+      <div><strong>${review.totalSets}</strong><span>Working sets</span></div>
+      <div><strong>${review.estimatedMinutes}</strong><span>Est. minutes</span></div>
+      <div><strong>${appState.selectedRoutineMuscles.length}</strong><span>Target groups</span></div>
+    </div>
+    <section class="routine-review ${hasCautions ? "has-cautions" : "is-clear"}" aria-labelledby="routineReviewTitle">
+      <div class="routine-review-heading">
+        <span class="routine-review-icon" aria-hidden="true">!</span>
+        <div>
+          <p>Routine review</p>
+          <h2 id="routineReviewTitle">${reviewTitle}</h2>
+        </div>
+      </div>
+      ${review.findings.length > 0 ? `
+        <div class="routine-review-list">
+          ${review.findings.map((finding) => `
+            <article class="routine-review-item ${finding.tone}">
+              <span aria-hidden="true">!</span>
+              <div><strong>${escapeHtml(finding.title)}</strong><p>${escapeHtml(finding.message)}</p></div>
+            </article>
+          `).join("")}
+        </div>
+      ` : `<p class="routine-review-clear">The current session stays within the app's general volume and coverage checks.</p>`}
+      <p class="routine-review-source">General reference points: <a href="https://www.acsm.org/docs/default-source/files-for-resource-library/resistance-training-for-health.pdf" target="_blank" rel="noreferrer">ACSM resistance training guidance</a> and <a href="https://www.cdc.gov/physical-activity-basics/adding-adults/what-counts.html" target="_blank" rel="noreferrer">CDC activity guidance</a>. Individual needs vary.</p>
+    </section>
+    <section class="routine-coverage" aria-labelledby="routineCoverageTitle">
+      <div class="routine-result-section-heading">
+        <div><p>Direct working sets</p><h2 id="routineCoverageTitle">Target Coverage</h2></div>
+      </div>
+      <div class="routine-coverage-grid">
+        ${appState.selectedRoutineMuscles.length > 0 ? appState.selectedRoutineMuscles.map((muscleId) => {
+          const muscle = getMuscle(muscleId);
+          const sets = review.setsByMuscle[muscleId] ?? 0;
+          return `
+            <div class="routine-coverage-item">
+              <span class="swatch" style="--swatch: ${muscle.color}"></span>
+              <strong>${muscle.name}</strong>
+              <span>${sets} set${sets === 1 ? "" : "s"}</span>
+            </div>
+          `;
+        }).join("") : `<p>No target muscles selected.</p>`}
+      </div>
+    </section>
+    <div class="routine-result-section-heading routine-exercise-heading">
+      <div><p>Session order</p><h2>Exercises</h2></div>
+      <span>${LEVELS[appState.level].label}</span>
+    </div>
     <ol class="routine-list">
-      ${appState.generatedRoutine.map((item, index) => {
+      ${appState.routineItems.map((item, index) => {
         const muscle = getMuscle(item.muscleId);
         return `
           <li class="routine-item">
-            <span class="color-chip" style="--chip-color: ${muscle.color}"></span>
-            <div>
-              <h3>${item.exercise.name}</h3>
-              <p>${muscle.name} - ${item.exercise.equipment} - ${item.exercise.cue}</p>
+            <div class="routine-item-main">
+              <span class="color-chip" style="--chip-color: ${muscle.color}"></span>
+              <div>
+                <h3>${escapeHtml(item.exerciseName)}</h3>
+                <p>${muscle.name} · ${escapeHtml(item.equipment)}</p>
+                <span>${escapeHtml(item.cue)}</span>
+              </div>
             </div>
-            <dl>
-              <div><dt>Sets</dt><dd>${item.sets}</dd></div>
-              <div><dt>Reps</dt><dd>${item.reps}</dd></div>
-              <div><dt>Rest</dt><dd>${item.rest}</dd></div>
-            </dl>
+            <div class="routine-prescription">
+              <label><span>Sets</span><input type="number" min="1" max="12" value="${item.sets}" data-routine-field="sets" data-routine-id="${item.id}"></label>
+              <label><span>Reps</span><input type="number" min="1" max="100" value="${item.reps}" data-routine-field="reps" data-routine-id="${item.id}"></label>
+              <label><span>Rest sec</span><input type="number" min="0" max="600" step="15" value="${item.restSeconds}" data-routine-field="restSeconds" data-routine-id="${item.id}"></label>
+            </div>
+            <div class="routine-item-actions" aria-label="Actions for ${escapeHtml(item.exerciseName)}">
+              <button type="button" data-routine-action="up" data-routine-id="${item.id}" aria-label="Move ${escapeHtml(item.exerciseName)} up" title="Move up" ${index === 0 ? "disabled" : ""}>↑</button>
+              <button type="button" data-routine-action="down" data-routine-id="${item.id}" aria-label="Move ${escapeHtml(item.exerciseName)} down" title="Move down" ${index === appState.routineItems.length - 1 ? "disabled" : ""}>↓</button>
+              <button type="button" data-routine-action="remove" data-routine-id="${item.id}" aria-label="Remove ${escapeHtml(item.exerciseName)}" title="Remove" class="is-danger">×</button>
+            </div>
           </li>
         `;
-      }).join("")}
+      }).join("") || `
+        <li class="empty-state routine-empty-state">
+          <h3>No exercises added</h3>
+          <p>Choose exercises from the library to start this session.</p>
+        </li>
+      `}
     </ol>
-    <p class="safety-note">General fitness information only; adjust for pain, injury history, and professional guidance.</p>
+    <p class="safety-note">Cautions are planning prompts, not a diagnosis or a substitute for individualized coaching or medical care.</p>
   `;
 
+  root.querySelector("[data-routine-name]")?.addEventListener("input", (event) => {
+    appState.routineName = event.target.value.slice(0, 80);
+    saveCustomRoutine();
+  });
+
+  root.querySelector("[data-clear-routine]")?.addEventListener("click", () => {
+    if (!window.confirm("Clear every exercise from this routine?")) return;
+    appState.routineItems = [];
+    saveCustomRoutine();
+    renderRoutinePage();
+  });
+
+  root.querySelectorAll("[data-routine-field]").forEach((input) => {
+    input.addEventListener("change", () => {
+      const item = appState.routineItems.find((candidate) => candidate.id === input.dataset.routineId);
+      if (!item) return;
+      const limits = input.dataset.routineField === "sets"
+        ? [1, 12]
+        : input.dataset.routineField === "reps"
+          ? [1, 100]
+          : [0, 600];
+      const value = Number.parseInt(input.value, 10);
+      item[input.dataset.routineField] = Number.isFinite(value)
+        ? Math.min(limits[1], Math.max(limits[0], value))
+        : limits[0];
+      saveCustomRoutine();
+      renderRoutinePage();
+    });
+  });
+
+  root.querySelectorAll("[data-routine-action]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const index = appState.routineItems.findIndex((item) => item.id === button.dataset.routineId);
+      if (index < 0) return;
+      if (button.dataset.routineAction === "remove") {
+        appState.routineItems.splice(index, 1);
+      } else {
+        const offset = button.dataset.routineAction === "up" ? -1 : 1;
+        const destination = index + offset;
+        if (destination < 0 || destination >= appState.routineItems.length) return;
+        [appState.routineItems[index], appState.routineItems[destination]] = [appState.routineItems[destination], appState.routineItems[index]];
+      }
+      saveCustomRoutine();
+      renderRoutinePage();
+    });
+  });
 }
 
 function getStretchId(phase, stretch) {
@@ -1107,14 +1275,17 @@ function getPairingAnalysis(foods) {
     + (features.phytateFoods.length && !features.prepMitigation && !features.hasVitaminC ? -12 : 0);
   const digestionScore = 26 + Math.min(totals.fiber * 3.5, 26) + Math.min(totals.protein * 0.8, 20) + Math.min(totals.fat * 1.1, 18) + orderBonus;
   const bloodSugarScore = carbLoad <= 8
-    ? 76
-    : 34 + Math.min(carbBuffers, 44) - Math.max(0, totals.addedSugar - 8) * 1.6;
+    ? 76 + Math.min(totals.protein * 0.35 + totals.fiber * 1.5 + totals.fat * 0.3, 24)
+    : 30 + Math.min(carbBuffers, 44)
+      + Math.min(totals.fiber * 0.8, 12)
+      + Math.min(totals.protein * 0.25, 8)
+      - Math.max(0, totals.addedSugar - 8) * 1.6;
   const hormoneScore = 30 + Math.min(totals.protein * 1.2, 26) + Math.min(totals.fiber * 2.4, 22) + Math.min(totals.fat * 0.9, 16) - Math.max(0, totals.addedSugar - 8) * 1.8;
   const gutScore = 25 + Math.min(totals.fiber * 3.2, 30) + (features.hasPrebiotic ? 14 : 0) + (features.hasProbiotic ? 16 : 0) + Math.min(features.polyphenolFoods * 6, 18) + Math.min(features.groupCount * 3, 12);
   const antioxidantScore = 22 + Math.min(features.polyphenolFoods * 10, 36) + Math.min(features.vitaminCFoods * 12, 24) + (features.hasFat && features.hasFatSoluble ? 10 : 0) + (features.hasSpiceBioactive ? 10 : 0);
   const antiNutrientScore = features.phytateFoods.length === 0
-    ? 72
-    : 30 + (features.prepMitigation ? 24 : 0) + (features.hasVitaminC || features.hasAcid ? 18 : 0) + (features.hasHemeIron ? 8 : 0);
+    ? 72 + (features.hasVitaminC ? 8 : 0) + (features.hasAcid ? 6 : 0) + (features.prepMitigation ? 4 : 0)
+    : 30 + (features.prepMitigation ? 22 : 0) + (features.hasVitaminC ? 14 : 0) + (features.hasAcid ? 8 : 0) + (features.hasHemeIron ? 8 : 0);
   const matrixScore = 28 + Math.min(features.groupCount * 9, 28) + Math.min(foods.filter((food) => food.group !== "sweeteners").length * 5, 20) + (features.hasFat && (features.hasFatSoluble || features.hasPolyphenols) ? 14 : 0) + (appState.pairingPrep === "cooked" ? 6 : 0);
   const immuneScore = 24 + (features.hasOmega3 ? 18 : 0) + (features.hasVitaminC ? 16 : 0) + (features.hasProbiotic ? 14 : 0) + Math.min(features.polyphenolFoods * 6, 18) + Math.min(totals.fiber * 1.2, 12) - Math.max(0, totals.addedSugar - 12);
   const bioactiveScore = 22 + Math.min(features.polyphenolFoods * 7, 26) + (features.hasTurmeric && features.hasBlackPepper ? 20 : 0) + (features.hasTurmeric && features.hasFat ? 12 : 0) + (features.hasTomato && features.hasOliveOil ? 18 : 0) + (features.hasPrebiotic && features.hasProbiotic ? 16 : 0) + (features.hasPlantIron && features.hasVitaminC ? 10 : 0);
@@ -1264,6 +1435,26 @@ function bioactiveDescription(features) {
     return "Prebiotic fiber plus probiotic food creates a synbiotic-style pairing for gut ecology.";
   }
   return "Bioactive synergy rises when herbs, spices, colorful plants, healthy fats, fermented foods, and complementary nutrients appear together.";
+}
+
+function pairingCounterSuggestionMarkup(card, suggestion, compact = false) {
+  if (!suggestion) {
+    return card.score === 100
+      ? `<p class="counter-score-complete">This counter is at the current model ceiling.</p>`
+      : "";
+  }
+
+  return `
+    <button
+      class="counter-food-button${compact ? " is-compact" : ""}"
+      type="button"
+      data-counter-food-suggestion="${suggestion.food.id}"
+      aria-label="Add ${suggestion.food.name} to the test plate"
+    >
+      <span>Add ${suggestion.food.name}</span>
+      <b>+${suggestion.gain}</b>
+    </button>
+  `;
 }
 
 function digestiveJourney(analysis) {
@@ -1532,6 +1723,10 @@ function renderPairingsPage() {
   const journey = digestiveJourney(analysis);
   const tests = pairingTestIdeas(analysis);
   const selectedIds = pairingFoods.map((food) => food.id);
+  const counterSuggestions = Object.fromEntries(cards.map((card) => [
+    card.id,
+    choosePairingCounterSuggestion(card.id, pairingFoods, getFood, getPairingAnalysis)
+  ]));
 
   pageRoot.innerHTML = `
     <section class="pairings-page wellness-page">
@@ -1621,6 +1816,7 @@ function renderPairingsPage() {
                 <div class="pairing-score-bar"><i style="width: ${card.score}%"></i></div>
                 <p>${card.body}</p>
                 <small>${card.test}</small>
+                ${pairingCounterSuggestionMarkup(card, counterSuggestions[card.id])}
               </article>
             `).join("")}
           </section>
@@ -1660,6 +1856,7 @@ function renderPairingsPage() {
                     <strong>${card.title}</strong>
                     <p>${card.body}</p>
                     <small>${card.test}</small>
+                    ${pairingCounterSuggestionMarkup(card, counterSuggestions[card.id], true)}
                   </div>
                   <span>${card.score}</span>
                 </article>
@@ -1723,6 +1920,8 @@ function renderPairingsPage() {
               <a href="https://ods.od.nih.gov/factsheets/Iron-HealthProfessional/" target="_blank" rel="noreferrer">NIH iron absorption</a>
               <a href="https://ods.od.nih.gov/factsheets/Zinc-HealthProfessional/" target="_blank" rel="noreferrer">NIH zinc and phytates</a>
               <a href="https://ods.od.nih.gov/factsheets/VitaminD-HealthProfessional/" target="_blank" rel="noreferrer">NIH vitamin D and calcium</a>
+              <a href="https://www.cdc.gov/diabetes/healthy-eating/diabetes-meal-planning.html" target="_blank" rel="noreferrer">CDC balanced meals and blood sugar</a>
+              <a href="https://pubmed.ncbi.nlm.nih.gov/36921903/" target="_blank" rel="noreferrer">Dietary fat and carotenoid absorption trial</a>
             </div>
           </section>
         </aside>
@@ -1760,6 +1959,15 @@ function renderPairingsPage() {
   pageRoot.querySelectorAll("[data-remove-pairing-food]").forEach((button) => {
     button.addEventListener("click", () => {
       appState.selectedPairingFoods = appState.selectedPairingFoods.filter((id) => id !== button.dataset.removePairingFood);
+      renderPairingsPage();
+    });
+  });
+
+  pageRoot.querySelectorAll("[data-counter-food-suggestion]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const foodId = button.dataset.counterFoodSuggestion;
+      if (!getFood(foodId) || appState.selectedPairingFoods.includes(foodId)) return;
+      appState.selectedPairingFoods = [...appState.selectedPairingFoods, foodId];
       renderPairingsPage();
     });
   });
@@ -1808,11 +2016,11 @@ function renderFoodPage() {
   const availableFoods = filteredFoods.filter((food) => !selectedIds.includes(food.id));
   const pairingMatches = FOOD_PAIRINGS
     .filter((pairing) => pairing.foods.some((foodId) => selectedIds.includes(foodId)))
-    .slice(0, 6);
+    .slice(0, 12);
   const visiblePairings = [
     ...pairingMatches,
     ...FOOD_PAIRINGS.filter((pairing) => !pairingMatches.includes(pairing))
-  ].slice(0, 6);
+  ].slice(0, 12);
 
   pageRoot.innerHTML = `
     <section class="food-page wellness-page">
