@@ -1,0 +1,8 @@
+node_modules/
+dist/
+vite.pid
+vite.out.log
+vite.err.log
+vite-lan.out.log
+vite-lan.err.log
+.sites-git/
